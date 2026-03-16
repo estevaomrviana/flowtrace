@@ -1,0 +1,107 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>{% block title %}FlowTrace{% endblock %}</title>
+
+    <link rel="stylesheet" href="{% static 'bootstrap/css/bootstrap.min.css' %}">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <link rel="stylesheet" href="{% static 'icons/lineicons/lineicons.css' %}">
+
+    {% block extra_css %}{% endblock %}
+</head>
+
+<body>
+
+    <!-- Navbar -->
+    <!-- <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container-fluid">
+
+            <a class="navbar-brand" href="#">Sistema</a>
+
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#menu">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse" id="menu">
+                <ul class="navbar-nav me-auto">
+
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">Home</a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">Servidores</a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">Logs</a>
+                    </li>
+
+                </ul>
+            </div>
+
+        </div>
+    </nav> -->
+
+
+    <header class="sticky-top">
+        <nav class="navbar navbar-expand-lg navbar-light bg-light p-3">
+            <div class="container-fluid">
+                <a class="navbar-brand" href="/">FlowTrace</a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarText" aria-controls="navbarText" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarText">
+                    <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                        {% block nav_link %}
+                        
+                        {% endblock %}
+                    </ul>
+                    <div class="">
+                        <div class="dropdown">
+                            <a class="btn" href="#" role="button" id="dropdownMenuLink" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="lni lni-user"></i>
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-start dropdown-menu-lg-end p-2 mt-1 border" aria-labelledby="dropdownMenuLink" >
+                                <li class="p-2">
+                                    <div class="text-center">
+                                        {% if request.user.first_name %}
+                                        {{ request.user.first_name }}
+                                        {% else %}
+                                        {{ request.user.username }}
+                                        {% endif %}
+                                    </div>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item p-2" href="">Meu Perfil</a></li>
+                                <li><a class="dropdown-item p-2" href="">Minhas Organizações</a></li>
+                                <li><a class="dropdown-item p-2" href="">Alterar senha</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item p-2" href="">Desconectar</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </nav>
+    </header>
+    <!-- Conteúdo -->
+    {% block content %}
+    {% endblock %}
+
+    <!-- Bootstrap JS -->
+    <script src="{% static 'bootstrap/js/bootstrap.bundle.min.js' %}"></script>
+
+    <!-- JS do projeto -->
+    <script src="{% static 'js/script.js' %}"></script>
+
+    {% block extra_js %}{% endblock %}
+
+</body>
+
+</html>

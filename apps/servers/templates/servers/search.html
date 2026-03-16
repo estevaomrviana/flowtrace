@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% load static %}
+
+
+{% block nav_link %}
+<li class="nav-item">
+    <a class="nav-link active" aria-current="page" href="/"><i class="lni lni-home"></i></a>
+</li>
+<li class="nav-item">
+    <a class="nav-link active" aria-current="page">/</a>
+</li>
+<li class="nav-item">
+    <a class="nav-link active" aria-current="page" href="#">Busca</a>
+</li>
+{% endblock %}
+                    
+
+
+{% block content %}
+
+<main class="container mt-4">
+    
+    <div class="row g-3 mb-4">
+        <h2>Buscar fluxo CGNAT</h2>
+
+        <form method="POST">
+            {% csrf_token %}
+            <div class="row g-3 align-items-end">
+
+                <div class="col-md">
+                    <label class="form-label">{{ form.ip.label }}</label>
+                    {{ form.ip }}
+                </div>
+
+                <div class="col-md">
+                    <label class="form-label">{{ form.port.label }}</label>
+                    {{ form.port }}
+                </div>
+
+                <div class="col-md">
+                    <label class="form-label">{{ form.datetime.label }}</label>
+                    {{ form.datetime }}
+                </div>
+
+                <div class="col-md">
+                    <label class="form-label">{{ form.minute_margin.label }}</label>
+                    {{ form.minute_margin }}
+                </div>
+
+                <div class="col-md">
+                    <button type="submit" class="btn w-100">
+                        Buscar
+                    </button>
+                </div>
+
+            </div>
+        </form>
+
+
+        {% if results %}
+
+        <h3>Resultados</h3>
+
+        <table class="table" border="1">
+
+            <tr>
+                <th>Tipo</th>
+                <th>Data</th>
+                <th>IP origem</th>
+                <th>Bloco portas</th>
+            </tr>
+
+            {% for r in results %}
+
+            <tr>
+                <td>
+                    {% if r.match_type == "exact_match" %} ✔ Horário exato {% else %} ⚠ Próximo {% endif %}
+                </td>
+
+                <td>{{ r.datetime }}</td>
+                <td>{{ r.source_ip }}</td>
+                <td>{{ r.port_block_start }} - {{ r.port_block_end }}</td>
+            </tr>
+
+            {% endfor %}
+
+        </table>
+
+        {% endif %}
+    </div>
+</main>
+
+{% endblock %}
+
+
+{% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/inputmask/5.0.8/inputmask.min.js"></script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    Inputmask({ alias: "ip" }).mask("#ip-field");
+});
+</script>
+
+{% endblock %}

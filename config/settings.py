@@ -1,14 +1,21 @@
 import os
 from pathlib import Path
 from prettyconf import config
+from cryptography.fernet import Fernet
+
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = config("SECRET_KEY")
 DEBUG = config("DEBUG", default=False, cast=config.boolean)
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', cast=lambda v: [s.strip() for s in v.split(',')])
 
+ENCRYPTION_KEY = config("ENCRYPTION_KEY")
+cipher_suite = Fernet(ENCRYPTION_KEY.encode())
 
 INSTALLED_APPS = [
+    # my apps
+    'apps.servers.apps.ServersConfig',
+    # django apps
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -32,7 +39,7 @@ ROOT_URLCONF = 'config.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [os.path.join(BASE_DIR, 'templates')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
