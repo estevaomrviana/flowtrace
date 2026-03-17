@@ -67,21 +67,21 @@ class FlowSearchView(LoginRequiredMixin, View):
                 if not results:
                     message = "Não encontramos logs para o dia consultado"
 
-            # except RuntimeError as e:
-            #     error_id = uuid.uuid4()
+            except RuntimeError as e:
+                error_id = uuid.uuid4()
                 
-            #     logger.exception(
-            #         f"[Erro ID {error_id}]: {str(e)}"
-            #     )
+                logger.exception(
+                    f"[Erro ID {error_id}]: {str(e)}"
+                )
                 
-            #     if "No such file or directory" in str(e):
-            #         message = "Não encontramos logs para o dia consultado"
+                if "No such file or directory" in str(e):
+                    message = "Não encontramos logs para o dia consultado"
                     
-            #     else:
-            #         message = (
-            #             f"Ocorreu um erro inesperado (ID: {error_id}). "
-            #             "Por favor, entre em contato com o suporte."
-            #         )
+                else:
+                    message = (
+                        f"Ocorreu um erro inesperado (ID: {error_id}). "
+                        "Por favor, entre em contato com o suporte."
+                    )
 
             except Exception as e:
                 error_id = uuid.uuid4()
