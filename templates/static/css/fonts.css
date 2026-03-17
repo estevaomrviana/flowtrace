@@ -1,0 +1,23 @@
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@600;700&family=Inconsolata:wght@400;500;600&display=swap');
+
+:root {
+--font-primary: 'Inter', sans-serif;
+--font-heading: 'Montserrat', sans-serif;
+--font-mono: 'Inconsolata', monospace;
+}
+
+body {
+    font-family: var(--font-primary);
+}
+
+h1, h2, h3, h4, h5 {
+    font-family: var(--font-heading);
+    letter-spacing: 0.5px;
+}
+
+.mono, code, pre {
+    font-family: var(--font-mono);
+    letter-spacing: 0.3px;
+    font-variant-numeric: tabular-nums;
+}
