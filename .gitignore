@@ -18,8 +18,9 @@ media/
 *.db
 *.pid
 
-
 backup/
 
 README.md
 
+*.log
+logs/

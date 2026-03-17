@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block nav_link %}
+<li class="nav-item">
+    <a class="nav-link" href="/"><i class="lni lni-home"></i></a>
+</li>
+<li class="nav-item">
+    <a class="nav-link">/</a>
+</li>
+<li class="nav-item">
+    <a class="nav-link active" aria-current="page">Servidores</a>
+</li>
+{% endblock %}
+                    
+
+{% block content %}
+
+<main class="container mt-4">
+    <div class="row g-3 mb-4">
+        <h1>Servidores</h1>
+        
+        {% for server in object_list %}
+        <div class="col-md-6 col-sm-12">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">{{ server.name }}</h5>
+                    <p class="card-text"><strong>Host:</strong> {{ server.host }}</p>
+                    <a href="{% url 'servers:server_flow_search' server.pk %}" class="btn border">Acessar</a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</main>
+
+{% endblock %}

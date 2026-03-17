@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+{% load static %}
+
+
+{% block nav_link %}
+<li class="nav-item">
+    <a class="nav-link" href="/"><i class="lni lni-home"></i></a>
+</li>
+
+<li class="nav-item">
+    <a class="nav-link">/</a>
+</li>
+<li class="nav-item">
+    <a class="nav-link" href="{% url 'servers:server_list' %}">Servidores</a>
+</li>
+<li class="nav-item">
+    <a class="nav-link">/</a>
+</li>
+<li class="nav-item">
+    <a class="nav-link active" aria-current="page">Busca em {{ server.name }}</a>
+</li>
+{% endblock %}
+                    
+
+
+{% block content %}
+
+<main class="container mt-4">
+    
+    <div class="row g-3 mb-4">
+        <h2>Busca em {{ server.name }}</h2>
+
+        <div class="col-12">
+            <div class="card border p-3">
+                <div class="card-body">
+                    <form method="POST">
+                        {% csrf_token %}
+
+                        <!-- erros gerais do form -->
+                        {% if form.non_field_errors %}
+                            <div class="alert alert-danger">
+                                {{ form.non_field_errors }}
+                            </div>
+                        {% endif %}
+
+                        <div class="row g-3 align-items-end">
+
+                            <div class="col">
+                                <label class="form-label">{{ form.ip.label }}</label>
+                                {{ form.ip }}
+                                <div class="text-danger small">
+                                    {{ form.ip.errors }}
+                                </div>
+                            </div>
+
+                            <div class="col">
+                                <label class="form-label">{{ form.port.label }}</label>
+                                {{ form.port }}
+                                <div class="text-danger small">
+                                    {{ form.port.errors }}
+                                </div>
+                            </div>
+
+                            <div class="col">
+                                <label class="form-label">{{ form.datetime.label }}</label>
+                                {{ form.datetime }}
+                                <div class="text-danger small">
+                                    {{ form.datetime.errors }}
+                                </div>
+                            </div>
+
+                            <div class="col">
+                                <label class="form-label">{{ form.minute_margin.label }}</label>
+                                {{ form.minute_margin }}
+                                <div class="text-danger small">
+                                    {{ form.minute_margin.errors }}
+                                </div>
+                            </div>
+
+                            <div class="col">
+                                <button type="submit" class="btn btn-outline-secondary border w-100">
+                                    Buscar
+                                </button>
+                            </div>
+
+                        </div>
+                    </form>
+                </div>
+
+            </div>
+            
+        </div>
+
+
+        {% if searched %}
+            {% if results %}
+            <div class="col-12">
+                <div class="card border p-3">
+                    <div class="card-body">
+                        <h5 class="mb-3">Resultados</h5>
+
+                        <table class="table" border="1">
+                            <tr>
+                                <th>Tipo</th>
+                                <th>Data</th>
+                                <th>IP origem</th>
+                                <th>Bloco portas</th>
+                            </tr>
+
+                            {% for r in results %}
+                            <tr>
+                                <td class="mono">
+                                    {% if r.match_type == "exact_match" %} ✔ Horário exato {% else %} ⚠ Próximo {% endif %}
+                                </td>
+                                <td class="mono">{{ r.flow_time|date:"d/m/Y H:i" }}</td>
+                                <td class="mono">{{ r.source_ip }}</td>
+                                <td class="mono">[{{ r.port_block_start }} - {{ r.port_block_end }}]</td>
+                            </tr>
+                            {% endfor %}
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="col-12">
+                <div class="alert alert-warning">
+                    {{ message }}
+                </div>
+            </div>
+            {% endif %}
+        {% endif %}
+    </div>
+</main>
+
+{% endblock %}
+
+
+{% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/inputmask/5.0.8/inputmask.min.js"></script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    Inputmask({ alias: "ip" }).mask("#ip-field");
+});
+</script>
+
+{% endblock %}

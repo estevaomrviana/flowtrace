@@ -1,5 +1,6 @@
 import json
 from datetime import datetime
+from django.utils import timezone
 
 
 class NFDumpParser:
@@ -18,8 +19,8 @@ class NFDumpParser:
             if not t_first:
                 continue
 
-            flow_time = datetime.fromisoformat(t_first)
-
+            flow_time = datetime.fromisoformat(t_first).replace(microsecond=0, tzinfo=None)
+            
             diff = abs((flow_time - target_datetime).total_seconds())
 
             match_type = "near_match"
@@ -37,7 +38,7 @@ class NFDumpParser:
             results.append(
                 {
                     "source_ip": item.get("src4_addr"),
-                    "datetime": t_first,
+                    "flow_time": flow_time,
                     "match_type": match_type,
                     "port_block_start": item.get("pblock_start"),
                     "port_block_end": item.get("pblock_end"),
@@ -45,4 +46,3 @@ class NFDumpParser:
             )
 
         return results
-
