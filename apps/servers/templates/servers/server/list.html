@@ -1,37 +1,53 @@
 {% extends "base.html" %}
-{% load static %}
 
-{% block nav_link %}
-<li class="nav-item">
-    <a class="nav-link" href="/"><i class="lni lni-home"></i></a>
-</li>
-<li class="nav-item">
-    <a class="nav-link">/</a>
-</li>
-<li class="nav-item">
-    <a class="nav-link active" aria-current="page">Servidores</a>
-</li>
+{% block title %}Servidores · FlowTrace{% endblock %}
+
+{% block breadcrumb %}
+<span class="ft-crumbs__current">Servidores</span>
 {% endblock %}
-                    
 
 {% block content %}
+<div class="container">
 
-<main class="container mt-4">
-    <div class="row g-3 mb-4">
-        <h1>Servidores</h1>
-        
-        {% for server in object_list %}
-        <div class="col-md-6 col-sm-12">
-            <div class="card">
-                <div class="card-body">
-                    <h5 class="card-title">{{ server.name }}</h5>
-                    <p class="card-text"><strong>Host:</strong> {{ server.host }}</p>
-                    <a href="{% url 'servers:server_flow_search' server.pk %}" class="btn border">Acessar</a>
-                </div>
-            </div>
+    <div class="ft-page-head">
+        <div>
+            <h1>Servidores</h1>
+            <p>Escolha o concentrador onde a ocorrência deve ser buscada.</p>
         </div>
+
+        {% if object_list|length > 6 %}
+        <div class="ft-search-input">
+            <i class="lni lni-search-alt"></i>
+            <input type="search" class="form-control" placeholder="Filtrar servidores" data-filter=".ft-server" aria-label="Filtrar servidores">
+        </div>
+        {% endif %}
+    </div>
+
+    {% if object_list %}
+    <div class="ft-server-grid">
+        {% for server in object_list %}
+        <a class="ft-card ft-server" href="{% url 'servers:server_flow_search' server.pk %}"
+           data-filter-text="{{ server.name|lower }} {{ server.host|lower }}">
+            <span class="ft-server__icon"><i class="lni lni-database"></i></span>
+            <span class="ft-server__body">
+                <span class="ft-server__name">{{ server.name|default:"Sem nome" }}</span>
+                <span class="ft-server__host mono">{{ server.host }}</span>
+            </span>
+            <i class="lni lni-arrow-right ft-server__go"></i>
+        </a>
         {% endfor %}
     </div>
-</main>
+    <p class="ft-empty ft-empty--inline d-none" data-filter-empty>Nenhum servidor corresponde ao filtro.</p>
+    {% else %}
+    <div class="ft-card ft-empty">
+        <i class="lni lni-database"></i>
+        <h2>Nenhum servidor cadastrado</h2>
+        <p>Cadastre um servidor de logs para começar a fazer buscas.</p>
+        {% if user.is_staff %}
+        <a href="{% url 'admin:servers_server_add' %}" class="btn btn-primary">Cadastrar servidor</a>
+        {% endif %}
+    </div>
+    {% endif %}
 
+</div>
 {% endblock %}

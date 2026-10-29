@@ -1,8 +1,12 @@
 asgiref==3.11.1
+bcrypt==5.0.0
 cffi==2.0.0
 cryptography==46.0.5
 Django==6.0.3
+invoke==3.0.3
+paramiko==5.1.0
 prettyconf==2.3.0
 pycparser==3.0
+PyNaCl==1.6.2
 sqlparse==0.5.5
 tzdata==2025.3

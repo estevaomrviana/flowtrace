@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block title %}Entrar · FlowTrace{% endblock %}
+{% block body_class %}ft-auth{% endblock %}
+{% block header %}{% endblock %}
+
+{% block content %}
+<div class="ft-auth__wrap">
+    <div class="ft-auth__brand">
+        <span class="ft-brand__mark ft-brand__mark--lg" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l3-7 4 14 3-7h4"/></svg>
+        </span>
+        <h1>FlowTrace</h1>
+        <p>Rastreamento de sessões CGNAT</p>
+    </div>
+
+    <div class="ft-card ft-auth__card">
+        <form method="post" novalidate>
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ next }}">
+
+            {% if form.errors %}
+            <div class="ft-alert ft-alert--danger mb-3">
+                <i class="lni lni-warning"></i>
+                <div>Usuário ou senha incorretos.</div>
+            </div>
+            {% endif %}
+
+            <div class="mb-3">
+                <label class="form-label" for="id_username">Usuário</label>
+                <input type="text" name="username" id="id_username" class="form-control"
+                       value="{{ form.username.value|default:'' }}" autocomplete="username" autofocus required>
+            </div>
+            <div class="mb-4">
+                <label class="form-label" for="id_password">Senha</label>
+                <input type="password" name="password" id="id_password" class="form-control"
+                       autocomplete="current-password" required>
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100">Entrar</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

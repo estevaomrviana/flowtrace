@@ -7,10 +7,18 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = config("SECRET_KEY")
 DEBUG = config("DEBUG", default=False, cast=config.boolean)
-ALLOWED_HOSTS = config('ALLOWED_HOSTS', cast=lambda v: [s.strip() for s in v.split(',')])
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1', cast=lambda v: [s.strip() for s in v.split(',')])
 
 ENCRYPTION_KEY = config("ENCRYPTION_KEY")
 cipher_suite = Fernet(ENCRYPTION_KEY.encode())
+
+# Timeouts (segundos) das consultas SSH aos servidores de log
+SSH_CONNECT_TIMEOUT = config("SSH_CONNECT_TIMEOUT", default=10, cast=int)
+SSH_COMMAND_TIMEOUT = config("SSH_COMMAND_TIMEOUT", default=120, cast=int)
+
+LOGIN_URL = 'login'
+LOGIN_REDIRECT_URL = 'servers:server_list'
+LOGOUT_REDIRECT_URL = 'login'
 
 INSTALLED_APPS = [
     # my apps

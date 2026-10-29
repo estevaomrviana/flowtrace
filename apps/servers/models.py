@@ -21,6 +21,7 @@ class Server(models.Model):
     class Meta:
         verbose_name = 'Servidor'
         verbose_name_plural = 'Servidores'
+        ordering = ['name']
 
     def __str__(self):
         return f"{self.name}"

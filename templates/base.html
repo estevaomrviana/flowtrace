@@ -1,6 +1,6 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-br" data-bs-theme="light">
 
 <head>
     <meta charset="UTF-8">
@@ -8,65 +8,83 @@
 
     <title>{% block title %}FlowTrace{% endblock %}</title>
 
+    <script>
+        // Aplica o tema antes da renderização para evitar "piscar".
+        (function () {
+            var theme = null;
+            try { theme = localStorage.getItem("ft-theme"); } catch (e) {}
+            if (!theme) {
+                theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+            }
+            document.documentElement.setAttribute("data-bs-theme", theme);
+        })();
+    </script>
+
     <link rel="stylesheet" href="{% static 'bootstrap/css/bootstrap.min.css' %}">
-    <link rel="stylesheet" href="{% static 'css/style.css' %}">
-    <link rel="stylesheet" href="{% static 'css/fonts.css' %}">
     <link rel="stylesheet" href="{% static 'icons/lineicons/lineicons.css' %}">
+    <link rel="stylesheet" href="{% static 'css/fonts.css' %}">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
 
     {% block extra_css %}{% endblock %}
 </head>
 
-<body>
-    
-    <header class="sticky-top">
-        <nav class="navbar navbar-expand-lg navbar-light bg-light p-3">
-            <div class="container-fluid">
-                <a class="navbar-brand" href="/">FlowTrace</a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarText" aria-controls="navbarText" aria-expanded="false" aria-label="Toggle navigation">
-                    <span class="navbar-toggler-icon"></span>
+<body class="{% block body_class %}{% endblock %}">
+
+    {% block header %}
+    <header class="ft-topbar">
+        <div class="container ft-topbar__inner">
+            <a class="ft-brand" href="{% url 'servers:server_list' %}">
+                <span class="ft-brand__mark" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l3-7 4 14 3-7h4"/></svg>
+                </span>
+                <span>FlowTrace</span>
+            </a>
+
+            <nav class="ft-crumbs" aria-label="Navegação">
+                {% block breadcrumb %}{% endblock %}
+            </nav>
+
+            <div class="ft-topbar__actions">
+                <button type="button" class="ft-icon-btn" data-theme-toggle title="Alternar tema" aria-label="Alternar tema">
+                    <i class="lni lni-night ft-theme-dark"></i>
+                    <i class="lni lni-sun ft-theme-light"></i>
                 </button>
-                <div class="collapse navbar-collapse" id="navbarText">
-                    <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-                        {% block nav_link %}
-                        
-                        {% endblock %}
+
+                {% if user.is_authenticated %}
+                <div class="dropdown">
+                    <button class="ft-user" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <span class="ft-user__avatar">{{ user.get_short_name|default:user.username|first|upper }}</span>
+                        <span class="ft-user__name d-none d-sm-inline">{{ user.get_short_name|default:user.username }}</span>
+                        <i class="lni lni-chevron-down small"></i>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end ft-menu">
+                        <li class="ft-menu__header">
+                            <div class="fw-semibold">{{ user.get_full_name|default:user.username }}</div>
+                            {% if user.email %}<div class="text-body-secondary small">{{ user.email }}</div>{% endif %}
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        {% if user.is_staff %}
+                        <li><a class="dropdown-item" href="{% url 'admin:index' %}"><i class="lni lni-cog me-2"></i>Administração</a></li>
+                        {% endif %}
+                        <li>
+                            <form method="post" action="{% url 'logout' %}">
+                                {% csrf_token %}
+                                <button type="submit" class="dropdown-item"><i class="lni lni-exit me-2"></i>Sair</button>
+                            </form>
+                        </li>
                     </ul>
-                    <div class="">
-                        <div class="dropdown">
-                            <a class="btn" href="#" role="button" id="dropdownMenuLink" data-bs-toggle="dropdown" aria-expanded="false">
-                                <i class="lni lni-user"></i>
-                            </a>
-                            <ul class="dropdown-menu dropdown-menu-start dropdown-menu-lg-end p-2 mt-1 border" aria-labelledby="dropdownMenuLink" >
-                                <li class="p-2">
-                                    <div class="text-center">
-                                        {% if request.user.first_name %}
-                                        {{ request.user.first_name }}
-                                        {% else %}
-                                        {{ request.user.username }}
-                                        {% endif %}
-                                    </div>
-                                </li>
-                                <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item p-2" href="">Meu Perfil</a></li>
-                                <li><a class="dropdown-item p-2" href="">Minhas Organizações</a></li>
-                                <li><a class="dropdown-item p-2" href="">Alterar senha</a></li>
-                                <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item p-2" href="">Desconectar</a></li>
-                            </ul>
-                        </div>
-                    </div>
                 </div>
+                {% endif %}
             </div>
-        </nav>
+        </div>
     </header>
-    <!-- Conteúdo -->
-    {% block content %}
     {% endblock %}
 
-    <!-- Bootstrap JS -->
-    <script src="{% static 'bootstrap/js/bootstrap.bundle.min.js' %}"></script>
+    <main class="ft-main">
+        {% block content %}{% endblock %}
+    </main>
 
-    <!-- JS do projeto -->
+    <script src="{% static 'bootstrap/js/bootstrap.bundle.min.js' %}"></script>
     <script src="{% static 'js/script.js' %}"></script>
 
     {% block extra_js %}{% endblock %}

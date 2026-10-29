@@ -1,13 +1,15 @@
+import csv
 import logging
 import uuid
 
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.shortcuts import render, get_object_or_404
-from django.views.generic import ListView, DetailView, View
-from django.utils import timezone
+from django.http import HttpResponse
+from django.shortcuts import get_object_or_404, render
+from django.views.generic import ListView, View
 
-from .models import Server
 from .forms import FlowSearchForm
+from .models import Server
+from .services.exceptions import NoLogsFound, ServerConnectionError
 from .services.flow_service import FlowService
 
 logger = logging.getLogger(__name__)
@@ -18,89 +20,92 @@ class ServerList(LoginRequiredMixin, ListView):
     template_name = 'servers/server/list.html'
 
 
-class ServerDetailView(LoginRequiredMixin, DetailView):
-    model = Server
-    template_name = 'servers/server/detail.html'
-
-
 class FlowSearchView(LoginRequiredMixin, View):
+    """Busca por GET: a URL da consulta pode ser compartilhada e exportada (?export=csv)."""
+
     template_name = "servers/server/search.html"
 
     def get(self, request, pk):
         server = get_object_or_404(Server, pk=pk)
-        form = FlowSearchForm()
+        form = FlowSearchForm(request.GET or None)
+
+        result = None
+        error = None
+
+        if form.is_bound and form.is_valid():
+            result, error = self.run_search(server, form.to_query())
+
+            if result and request.GET.get("export") == "csv":
+                return self.export_csv(result)
 
         context = {
             "server": server,
             "form": form,
-            "results": [],
-            "searched": False,
-            "message": None,
+            "result": result,
+            "error": error,
         }
-
         return render(request, self.template_name, context)
 
-    def post(self, request, pk):
-        server = get_object_or_404(Server, pk=pk)
-        form = FlowSearchForm(request.POST)
+    def run_search(self, server, query):
+        try:
+            return FlowService(server).search(query), None
 
-        results = []
-        searched = True
-        message = None
+        except NoLogsFound as e:
+            days = ", ".join(day.strftime("%d/%m/%Y") for day in e.days)
+            return None, {
+                "level": "info",
+                "title": "Sem logs para o período",
+                "text": f"O servidor não possui registros para {days}.",
+            }
 
-        if form.is_valid():
-            ip = form.cleaned_data["ip"]
-            datetime_target = timezone.make_naive(form.cleaned_data["datetime"])
-            port = form.cleaned_data["port"]
-            minute_margin = form.cleaned_data["minute_margin"]
+        except ServerConnectionError:
+            error_id = uuid.uuid4().hex[:8]
+            logger.exception("[Erro %s] Conexão com %s", error_id, server)
+            return None, {
+                "level": "danger",
+                "title": "Servidor indisponível",
+                "text": "Não foi possível conectar ao servidor de logs. "
+                        "Tente novamente em instantes.",
+                "id": error_id,
+            }
 
-            service = FlowService(server)
+        except Exception:
+            error_id = uuid.uuid4().hex[:8]
+            logger.exception("[Erro %s] Busca em %s: %s", error_id, server, query)
+            return None, {
+                "level": "danger",
+                "title": "Erro inesperado",
+                "text": "A consulta não pôde ser concluída. "
+                        "Informe o código ao suporte.",
+                "id": error_id,
+            }
 
-            try:
-                results = service.search_flow(
-                    ip=ip,
-                    target_datetime=datetime_target,
-                    port=port,
-                    minute_margin=minute_margin
-                ) or []
+    @staticmethod
+    def export_csv(result):
+        query = result.query
+        filename = f"flowtrace_{query.ip}_{query.target:%Y%m%d_%H%M%S}.csv"
 
-                if not results:
-                    message = "Não encontramos logs para o dia consultado"
+        response = HttpResponse(content_type="text/csv; charset=utf-8")
+        response["Content-Disposition"] = f'attachment; filename="{filename}"'
+        response.write("﻿")  # BOM para o Excel reconhecer UTF-8
 
-            except RuntimeError as e:
-                error_id = uuid.uuid4()
-                
-                logger.exception(
-                    f"[Erro ID {error_id}]: {str(e)}"
-                )
-                
-                if "No such file or directory" in str(e):
-                    message = "Não encontramos logs para o dia consultado"
-                    
-                else:
-                    message = (
-                        f"Ocorreu um erro inesperado (ID: {error_id}). "
-                        "Por favor, entre em contato com o suporte."
-                    )
+        writer = csv.writer(response, delimiter=";")
+        writer.writerow([
+            "ip_publico", "porta_consultada", "horario_consultado",
+            "correspondencia", "data_hora", "diferenca_segundos",
+            "ip_origem", "bloco_inicio", "bloco_fim",
+        ])
+        for r in result.records:
+            writer.writerow([
+                query.ip,
+                query.port or "",
+                query.target.strftime("%d/%m/%Y %H:%M:%S"),
+                "exato" if r.is_exact else "proximo",
+                r.flow_time.strftime("%d/%m/%Y %H:%M:%S"),
+                r.delta_seconds,
+                r.source_ip,
+                r.port_block_start if r.port_block_start is not None else "",
+                r.port_block_end if r.port_block_end is not None else "",
+            ])
 
-            except Exception as e:
-                error_id = uuid.uuid4()
-
-                logger.exception(
-                    f"[Erro ID {error_id}]: {str(e)}"
-                )
-
-                message = (
-                    f"Ocorreu um erro inesperado (ID: {error_id}). "
-                    "Por favor, entre em contato com o suporte."
-                )
-
-        context = {
-            "server": server,
-            "form": form,
-            "results": results,
-            "searched": searched,
-            "message": message,
-        }
-
-        return render(request, self.template_name, context)
+        return response

@@ -6,19 +6,14 @@ from .models import Server
 class ServerAdminForm(forms.ModelForm):
     password_field = forms.CharField(
         label="Senha",
-        widget=forms.PasswordInput(render_value=True),
+        widget=forms.PasswordInput(render_value=False),
         required=False,
-        help_text="A senha será criptografada automaticamente ao salvar."
+        help_text="Criptografada ao salvar. Deixe em branco para manter a senha atual."
     )
 
     class Meta:
         model = Server
         exclude = ['_password_encrypted']
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        if self.instance and self.instance.pk:
-            self.fields['password_field'].initial = self.instance.password
 
     def save(self, commit=True):
         instance = super().save(commit=False)
