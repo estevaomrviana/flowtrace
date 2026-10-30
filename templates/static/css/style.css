@@ -965,3 +965,8 @@ textarea.form-control { min-height: 120px; font-size: .8125rem; }
     color: var(--ft-muted);
     font-size: .875rem;
 }
+
+.ft-form__stack {
+    display: grid;
+    gap: 16px;
+}

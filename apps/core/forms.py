@@ -1,4 +1,5 @@
 from django import forms
+from django.contrib.auth.forms import PasswordChangeForm
 
 
 class StyledFormMixin:
@@ -15,3 +16,7 @@ class StyledFormMixin:
             else:
                 css = 'form-control'
             widget.attrs.setdefault('class', css)
+
+
+class StyledPasswordChangeForm(StyledFormMixin, PasswordChangeForm):
+    """Troca de senha do próprio usuário no padrão visual do sistema."""

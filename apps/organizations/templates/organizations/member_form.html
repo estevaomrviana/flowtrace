@@ -44,8 +44,8 @@
                 <div class="ft-span-2">{% include "includes/field.html" with field=form.role %}</div>
                 {% if form.is_active %}<div class="ft-span-2">{% include "includes/field.html" with field=form.is_active %}</div>{% endif %}
                 {% if form.password1 %}
-                {% include "includes/field.html" with field=form.password1 %}
-                {% include "includes/field.html" with field=form.password2 %}
+                <div class="ft-span-2">{% include "includes/field.html" with field=form.password1 %}</div>
+                <div class="ft-span-2">{% include "includes/field.html" with field=form.password2 %}</div>
                 {% endif %}
                 {% if form.new_password %}<div class="ft-span-2">{% include "includes/field.html" with field=form.new_password %}</div>{% endif %}
             </div>
