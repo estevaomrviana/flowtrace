@@ -1,9 +1,9 @@
 {% extends "base.html" %}
 
-{% block title %}Servidores · FlowTrace{% endblock %}
+{% block title %}Buscar · FlowTrace{% endblock %}
 
 {% block breadcrumb %}
-<span class="ft-crumbs__current">Servidores</span>
+<span class="ft-crumbs__current">{{ organization }}</span>
 {% endblock %}
 
 {% block content %}
@@ -11,7 +11,7 @@
 
     <div class="ft-page-head">
         <div>
-            <h1>Servidores</h1>
+            <h1>Buscar ocorrência</h1>
             <p>Escolha o concentrador onde a ocorrência deve ser buscada.</p>
         </div>
 
@@ -26,7 +26,7 @@
     {% if object_list %}
     <div class="ft-server-grid">
         {% for server in object_list %}
-        <a class="ft-card ft-server" href="{% url 'servers:server_flow_search' server.pk %}"
+        <a class="ft-card ft-server" href="{% url 'servers:search' server.pk %}"
            data-filter-text="{{ server.name|lower }} {{ server.host|lower }}">
             <span class="ft-server__icon"><i class="lni lni-database"></i></span>
             <span class="ft-server__body">
@@ -41,10 +41,12 @@
     {% else %}
     <div class="ft-card ft-empty">
         <i class="lni lni-database"></i>
-        <h2>Nenhum servidor cadastrado</h2>
+        <h2>Nenhum servidor disponível</h2>
+        {% if membership.can_manage_servers %}
         <p>Cadastre um servidor de logs para começar a fazer buscas.</p>
-        {% if user.is_staff %}
-        <a href="{% url 'admin:servers_server_add' %}" class="btn btn-primary">Cadastrar servidor</a>
+        <a href="{% url 'servers:create' %}" class="btn btn-primary"><i class="lni lni-plus"></i> Cadastrar servidor</a>
+        {% else %}
+        <p>Os servidores da sua organização são cadastrados pela equipe FlowTrace. Entre em contato com o suporte para liberar o acesso.</p>
         {% endif %}
     </div>
     {% endif %}

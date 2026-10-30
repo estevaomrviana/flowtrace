@@ -33,7 +33,7 @@
     {% block header %}
     <header class="ft-topbar">
         <div class="container ft-topbar__inner">
-            <a class="ft-brand" href="{% url 'servers:server_list' %}">
+            <a class="ft-brand" href="{% url 'servers:list' %}">
                 <span class="ft-brand__mark" aria-hidden="true">
                     <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l3-7 4 14 3-7h4"/></svg>
                 </span>
@@ -60,9 +60,10 @@
                     <ul class="dropdown-menu dropdown-menu-end ft-menu">
                         <li class="ft-menu__header">
                             <div class="fw-semibold">{{ user.get_full_name|default:user.username }}</div>
-                            {% if user.email %}<div class="text-body-secondary small">{{ user.email }}</div>{% endif %}
+                            {% if organization %}<div class="text-body-secondary small">{{ organization }} · {{ membership.get_role_display }}</div>{% endif %}
                         </li>
                         <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="{% url 'password_change' %}"><i class="lni lni-lock-alt me-2"></i>Alterar senha</a></li>
                         {% if user.is_staff %}
                         <li><a class="dropdown-item" href="{% url 'admin:index' %}"><i class="lni lni-cog me-2"></i>Administração</a></li>
                         {% endif %}
@@ -77,10 +78,48 @@
                 {% endif %}
             </div>
         </div>
+
+        {% if membership %}
+        {% with section=request.resolver_match.namespace url_name=request.resolver_match.url_name %}
+        <nav class="ft-subnav" aria-label="Seções">
+            <div class="container ft-subnav__inner">
+                <a href="{% url 'servers:list' %}" class="ft-subnav__link{% if section == 'servers' and url_name == 'list' or url_name == 'search' %} is-active{% endif %}">
+                    <i class="lni lni-search-alt"></i> Buscar
+                </a>
+                <a href="{% url 'audit:list' %}" class="ft-subnav__link{% if section == 'audit' %} is-active{% endif %}">
+                    <i class="lni lni-list"></i> Histórico
+                </a>
+                {% if membership.is_admin %}
+                <span class="ft-subnav__sep" aria-hidden="true"></span>
+                <a href="{% url 'servers:manage' %}" class="ft-subnav__link{% if section == 'servers' and url_name != 'list' and url_name != 'search' %} is-active{% endif %}">
+                    <i class="lni lni-database"></i> Servidores
+                </a>
+                <a href="{% url 'organizations:members' %}" class="ft-subnav__link{% if section == 'organizations' and url_name != 'detail' %} is-active{% endif %}">
+                    <i class="lni lni-users"></i> Usuários
+                </a>
+                <a href="{% url 'organizations:detail' %}" class="ft-subnav__link{% if section == 'organizations' and url_name == 'detail' %} is-active{% endif %}">
+                    <i class="lni lni-cog"></i> Organização
+                </a>
+                {% endif %}
+            </div>
+        </nav>
+        {% endwith %}
+        {% endif %}
     </header>
     {% endblock %}
 
     <main class="ft-main">
+        {% if messages %}
+        <div class="container ft-messages">
+            {% for message in messages %}
+            <div class="ft-alert ft-alert--{% if message.tags == 'error' %}danger{% elif message.tags == 'success' %}success{% elif message.tags == 'warning' %}warning{% else %}info{% endif %}" role="status">
+                <i class="lni {% if message.tags == 'success' %}lni-checkmark-circle{% elif message.tags == 'info' %}lni-information{% else %}lni-warning{% endif %}"></i>
+                <div>{{ message }}</div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
         {% block content %}{% endblock %}
     </main>
 

@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block title %}{% if target %}Editar usuário{% else %}Novo usuário{% endif %} · FlowTrace{% endblock %}
+
+{% block breadcrumb %}
+<a href="{% url 'organizations:members' %}">Usuários</a>
+<i class="lni lni-chevron-right"></i>
+<span class="ft-crumbs__current">{% if target %}{{ target.user.username }}{% else %}Novo{% endif %}</span>
+{% endblock %}
+
+{% block content %}
+<div class="container ft-narrow">
+
+    <div class="ft-page-head">
+        <div>
+            <h1>{% if target %}{{ target.user.get_full_name|default:target.user.username }}{% else %}Novo usuário{% endif %}</h1>
+            <p>{% if target %}Usuário <span class="mono">{{ target.user.username }}</span>{% else %}Informe a senha inicial ao usuário por um canal seguro.{% endif %}</p>
+        </div>
+    </div>
+
+    <form method="post" class="ft-form" novalidate>
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+        <div class="ft-alert ft-alert--danger"><i class="lni lni-warning"></i><div>{{ form.non_field_errors|join:" " }}</div></div>
+        {% endif %}
+
+        <section class="ft-card ft-form__section">
+            <header class="ft-form__head"><h2>Dados</h2></header>
+            <div class="ft-form__grid">
+                {% include "includes/field.html" with field=form.first_name %}
+                {% include "includes/field.html" with field=form.last_name %}
+                <div class="ft-span-2">{% include "includes/field.html" with field=form.email %}</div>
+                {% if form.username %}<div class="ft-span-2">{% include "includes/field.html" with field=form.username %}</div>{% endif %}
+            </div>
+        </section>
+
+        <section class="ft-card ft-form__section">
+            <header class="ft-form__head">
+                <h2>Acesso</h2>
+                {% if target and target.pk == membership.pk %}<p>Você não pode alterar o próprio perfil ou desativar a própria conta.</p>{% endif %}
+            </header>
+            <div class="ft-form__grid">
+                <div class="ft-span-2">{% include "includes/field.html" with field=form.role %}</div>
+                {% if form.is_active %}<div class="ft-span-2">{% include "includes/field.html" with field=form.is_active %}</div>{% endif %}
+                {% if form.password1 %}
+                {% include "includes/field.html" with field=form.password1 %}
+                {% include "includes/field.html" with field=form.password2 %}
+                {% endif %}
+                {% if form.new_password %}<div class="ft-span-2">{% include "includes/field.html" with field=form.new_password %}</div>{% endif %}
+            </div>
+        </section>
+
+        <div class="ft-form__actions">
+            <a href="{% url 'organizations:members' %}" class="btn btn-outline-secondary">Cancelar</a>
+            <button type="submit" class="btn btn-primary">{% if target %}Salvar alterações{% else %}Criar usuário{% endif %}</button>
+        </div>
+    </form>
+
+</div>
+{% endblock %}

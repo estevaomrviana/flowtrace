@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block title %}Excluir {{ object }} · FlowTrace{% endblock %}
+
+{% block breadcrumb %}
+<a href="{% url 'servers:manage' %}">Servidores</a>
+<i class="lni lni-chevron-right"></i>
+<span class="ft-crumbs__current">Excluir</span>
+{% endblock %}
+
+{% block content %}
+<div class="container ft-narrow">
+    <form method="post" class="ft-card ft-confirm">
+        {% csrf_token %}
+        <span class="ft-confirm__icon"><i class="lni lni-trash-can"></i></span>
+        <h1>Excluir {{ object }}?</h1>
+        <p>O servidor e suas credenciais serão removidos. O histórico de buscas é mantido.</p>
+        <div class="ft-form__actions">
+            <a href="{% url 'servers:manage' %}" class="btn btn-outline-secondary">Cancelar</a>
+            <button type="submit" class="btn btn-danger">Excluir servidor</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

@@ -6,6 +6,14 @@ class ServerConnectionError(FlowSearchError):
     """Não foi possível conectar ou autenticar no servidor via SSH."""
 
 
+class CredentialMissing(ServerConnectionError):
+    """O servidor não tem credencial de acesso configurada."""
+
+
+class HostKeyMismatch(ServerConnectionError):
+    """A chave do host mudou desde a primeira conexão (possível interceptação)."""
+
+
 class RemoteCommandError(FlowSearchError):
     """O comando remoto falhou (timeout, código de saída diferente de zero)."""
 

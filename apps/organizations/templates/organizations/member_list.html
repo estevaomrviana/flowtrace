@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block title %}Usuários · FlowTrace{% endblock %}
+
+{% block breadcrumb %}
+<span>{{ organization }}</span>
+<i class="lni lni-chevron-right"></i>
+<span class="ft-crumbs__current">Usuários</span>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+
+    <div class="ft-page-head">
+        <div>
+            <h1>Usuários</h1>
+            <p>{{ organization.member_count }} de {% if organization.max_members is None %}ilimitados{% else %}{{ organization.max_members }}{% endif %} usuários ativos no plano.</p>
+        </div>
+        {% if organization.has_member_quota %}
+        <a href="{% url 'organizations:member_create' %}" class="btn btn-primary"><i class="lni lni-plus"></i> Novo usuário</a>
+        {% else %}
+        <span class="ft-badge ft-badge--neutral">Limite do plano atingido</span>
+        {% endif %}
+    </div>
+
+    <div class="ft-card ft-table-card">
+        <table class="ft-table">
+            <thead>
+                <tr>
+                    <th>Nome</th>
+                    <th>Usuário</th>
+                    <th>Perfil</th>
+                    <th>Último acesso</th>
+                    <th>Situação</th>
+                    <th class="ft-table__actions"><span class="visually-hidden">Ações</span></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for m in memberships %}
+                <tr>
+                    <td data-label="Nome">
+                        <div class="ft-cell-title">{{ m.user.get_full_name|default:m.user.username }}{% if m.pk == membership.pk %} <span class="ft-cell-sub">(você)</span>{% endif %}</div>
+                        <div class="ft-cell-sub">{{ m.user.email }}</div>
+                    </td>
+                    <td data-label="Usuário" class="mono">{{ m.user.username }}</td>
+                    <td data-label="Perfil">
+                        <span class="ft-badge {% if m.is_admin %}ft-badge--info{% else %}ft-badge--neutral{% endif %}">{{ m.get_role_display }}</span>
+                    </td>
+                    <td data-label="Último acesso" class="text-body-secondary">{{ m.user.last_login|date:"d/m/Y H:i"|default:"Nunca" }}</td>
+                    <td data-label="Situação">
+                        {% if m.user.is_active %}<span class="ft-badge ft-badge--exact">Ativo</span>{% else %}<span class="ft-badge ft-badge--neutral">Desativado</span>{% endif %}
+                    </td>
+                    <td class="ft-table__actions">
+                        <a href="{% url 'organizations:member_update' m.pk %}" class="btn btn-outline-secondary btn-sm"><i class="lni lni-pencil"></i> Editar</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <p class="ft-hint ft-result-gap">
+        <i class="lni lni-information"></i>
+        <span><strong>Administradores</strong> gerenciam usuários{% if organization.can_manage_servers %} e servidores{% endif %} e veem todo o histórico. <strong>Operadores</strong> fazem buscas e veem apenas o próprio histórico.</span>
+    </p>
+
+</div>
+{% endblock %}

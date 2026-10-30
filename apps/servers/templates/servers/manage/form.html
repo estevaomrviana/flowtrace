@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block title %}{% if object %}Editar {{ object }}{% else %}Novo servidor{% endif %} · FlowTrace{% endblock %}
+
+{% block breadcrumb %}
+<a href="{% url 'servers:manage' %}">Servidores</a>
+<i class="lni lni-chevron-right"></i>
+<span class="ft-crumbs__current">{% if object %}{{ object }}{% else %}Novo{% endif %}</span>
+{% endblock %}
+
+{% block content %}
+<div class="container ft-narrow">
+
+    <div class="ft-page-head">
+        <div>
+            <h1>{% if object %}Editar servidor{% else %}Novo servidor{% endif %}</h1>
+            <p>Os dados de acesso são criptografados e nunca exibidos novamente.</p>
+        </div>
+    </div>
+
+    <form method="post" class="ft-form" novalidate>
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+        <div class="ft-alert ft-alert--danger"><i class="lni lni-warning"></i><div>{{ form.non_field_errors|join:" " }}</div></div>
+        {% endif %}
+
+        <section class="ft-card ft-form__section">
+            <header class="ft-form__head">
+                <h2>Servidor</h2>
+                <p>Onde estão os arquivos do nfcapd.</p>
+            </header>
+            <div class="ft-form__grid">
+                <div class="ft-span-2">{% include "includes/field.html" with field=form.name %}</div>
+                {% include "includes/field.html" with field=form.host %}
+                {% include "includes/field.html" with field=form.port %}
+                <div class="ft-span-2">{% include "includes/field.html" with field=form.log_path %}</div>
+                <div class="ft-span-2">{% include "includes/field.html" with field=form.is_active %}</div>
+            </div>
+        </section>
+
+        <section class="ft-card ft-form__section">
+            <header class="ft-form__head">
+                <h2><i class="lni lni-lock-alt"></i> Acesso SSH</h2>
+                <p>Recomendamos um usuário dedicado, apenas com leitura da pasta de logs.</p>
+            </header>
+            <div class="ft-form__grid" data-auth-switch>
+                {% include "includes/field.html" with field=form.username %}
+                {% include "includes/field.html" with field=form.auth_method %}
+                <div class="ft-span-2" data-auth="password">{% include "includes/field.html" with field=form.password %}</div>
+                <div class="ft-span-2" data-auth="key">{% include "includes/field.html" with field=form.private_key %}</div>
+                <div class="ft-span-2" data-auth="key">{% include "includes/field.html" with field=form.key_passphrase %}</div>
+            </div>
+        </section>
+
+        <div class="ft-form__actions">
+            <a href="{% url 'servers:manage' %}" class="btn btn-outline-secondary">Cancelar</a>
+            <button type="submit" class="btn btn-primary">{% if object %}Salvar alterações{% else %}Cadastrar servidor{% endif %}</button>
+        </div>
+    </form>
+
+</div>
+{% endblock %}

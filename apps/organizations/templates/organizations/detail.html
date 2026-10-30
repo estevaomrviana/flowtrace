@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block title %}Organização · FlowTrace{% endblock %}
+
+{% block breadcrumb %}
+<span class="ft-crumbs__current">{{ organization }}</span>
+{% endblock %}
+
+{% block content %}
+<div class="container ft-narrow">
+
+    <div class="ft-page-head">
+        <div>
+            <h1>{{ organization.name }}</h1>
+            <p>{% if organization.document %}CNPJ <span class="mono">{{ organization.document }}</span> · {% endif %}Cliente desde {{ organization.created_at|date:"d/m/Y" }}</p>
+        </div>
+    </div>
+
+    <div class="ft-stat-grid">
+        <a class="ft-card ft-usage" href="{% url 'servers:manage' %}">
+            <span class="ft-usage__label"><i class="lni lni-database"></i> Servidores</span>
+            <span class="ft-usage__value">{{ server_count }}<small> / {% if organization.max_servers is None %}∞{% else %}{{ organization.max_servers }}{% endif %}</small></span>
+            {% if organization.max_servers %}
+            <span class="ft-meter"><span style="width: {% widthratio server_count organization.max_servers 100 %}%"></span></span>
+            {% endif %}
+        </a>
+        <a class="ft-card ft-usage" href="{% url 'organizations:members' %}">
+            <span class="ft-usage__label"><i class="lni lni-users"></i> Usuários ativos</span>
+            <span class="ft-usage__value">{{ member_count }}<small> / {% if organization.max_members is None %}∞{% else %}{{ organization.max_members }}{% endif %}</small></span>
+            {% if organization.max_members %}
+            <span class="ft-meter"><span style="width: {% widthratio member_count organization.max_members 100 %}%"></span></span>
+            {% endif %}
+        </a>
+    </div>
+
+    <section class="ft-card ft-form__section">
+        <header class="ft-form__head">
+            <h2>Plano</h2>
+            <p>Limites e permissões definidos pela equipe FlowTrace.</p>
+        </header>
+        <dl class="ft-dl">
+            <dt>Cadastro de servidores</dt>
+            <dd>
+                {% if organization.can_manage_servers %}
+                <span class="ft-badge ft-badge--exact">Liberado</span> Administradores podem cadastrar servidores próprios.
+                {% else %}
+                <span class="ft-badge ft-badge--info">Gerenciado</span> Os servidores são cadastrados pela equipe FlowTrace.
+                {% endif %}
+            </dd>
+            <dt>Segurança dos acessos</dt>
+            <dd>Credenciais SSH criptografadas, nunca exibidas após o cadastro, e chave do host fixada na primeira conexão.</dd>
+            <dt>Auditoria</dt>
+            <dd>Todas as buscas e exportações ficam registradas no <a href="{% url 'audit:list' %}">histórico</a>.</dd>
+        </dl>
+        <p class="ft-field__help mb-0">Para alterar o plano, fale com o suporte.</p>
+    </section>
+
+</div>
+{% endblock %}

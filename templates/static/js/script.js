@@ -51,6 +51,21 @@
         });
     });
 
+    // Formulário de servidor: mostra só os campos do método de autenticação escolhido
+    document.querySelectorAll("[data-auth-switch]").forEach(function (box) {
+        var select = box.querySelector("select[name=auth_method]");
+        if (!select) return;
+
+        function sync() {
+            box.querySelectorAll("[data-auth]").forEach(function (el) {
+                el.hidden = el.getAttribute("data-auth") !== select.value;
+            });
+        }
+
+        select.addEventListener("change", sync);
+        sync();
+    });
+
     // Filtro de lista no cliente
     document.querySelectorAll("input[data-filter]").forEach(function (input) {
         var items = document.querySelectorAll(input.getAttribute("data-filter"));

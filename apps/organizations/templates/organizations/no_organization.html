@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block title %}Sem acesso · FlowTrace{% endblock %}
+
+{% block content %}
+<div class="container ft-narrow">
+    <div class="ft-card ft-empty">
+        <i class="lni lni-lock-alt"></i>
+        <h2>Sua conta não está vinculada a uma organização ativa</h2>
+        <p>Peça ao administrador da sua empresa para liberar o acesso ou entre em contato com o suporte FlowTrace.</p>
+        {% if user.is_staff %}
+        <a href="{% url 'admin:index' %}" class="btn btn-primary">Ir para a administração da plataforma</a>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

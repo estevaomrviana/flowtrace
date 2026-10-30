@@ -1,33 +1,50 @@
 from django.contrib import admin
-from django import forms
+from django.utils.html import format_html
+
+from .forms import ServerForm
 from .models import Server
 
 
-class ServerAdminForm(forms.ModelForm):
-    password_field = forms.CharField(
-        label="Senha",
-        widget=forms.PasswordInput(render_value=False),
-        required=False,
-        help_text="Criptografada ao salvar. Deixe em branco para manter a senha atual."
-    )
+class ServerAdminForm(ServerForm):
+    class Meta(ServerForm.Meta):
+        fields = ('organization', 'managed_by_platform', *ServerForm.Meta.fields)
 
-    class Meta:
-        model = Server
-        exclude = ['_password_encrypted']
-
-    def save(self, commit=True):
-        instance = super().save(commit=False)
-        if self.cleaned_data.get('password_field'):
-            instance.password = self.cleaned_data['password_field']
-        
-        if commit:
-            instance.save()
-        return instance
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if not self.instance.pk:
+            # Cadastrado pela plataforma: por padrão a organização só usa.
+            self.fields['managed_by_platform'].initial = True
 
 
 @admin.register(Server)
 class ServerAdmin(admin.ModelAdmin):
     form = ServerAdminForm
-    list_display = ('name', 'host', 'username','log_path', 'port')
-    search_fields = ('name', 'host',)
+    list_display = ('name', 'organization', 'host', 'port', 'is_active', 'managed_by_platform', 'host_key_status')
+    list_filter = ('organization', 'is_active', 'managed_by_platform')
+    search_fields = ('name', 'host', 'organization__name')
+    list_select_related = ('organization', 'credential')
+    readonly_fields = ('host_key_status', 'created_by', 'created_at', 'updated_at')
+    fieldsets = (
+        (None, {'fields': ('organization', 'name', 'host', 'port', 'log_path', 'is_active', 'managed_by_platform')}),
+        ('Acesso SSH', {
+            'fields': ('username', 'auth_method', 'password', 'private_key', 'key_passphrase', 'host_key_status'),
+            'description': 'Os segredos são criptografados e nunca exibidos. Deixe em branco para manter os valores salvos.',
+        }),
+        ('Registro', {'fields': ('created_by', 'created_at', 'updated_at'), 'classes': ('collapse',)}),
+    )
 
+    @admin.display(description='chave do host')
+    def host_key_status(self, obj):
+        credential = getattr(obj, 'credential', None) if obj and obj.pk else None
+        if credential is None or not credential.host_key:
+            return 'Ainda não verificada'
+        return format_html(
+            '{}<br><small>verificada em {:%d/%m/%Y %H:%M}</small>',
+            credential.host_key.split()[0], credential.host_key_verified_at,
+        )
+
+    def save_model(self, request, obj, form, change):
+        if not change:
+            obj.created_by = request.user
+        super().save_model(request, obj, form, change)
+        form.save_credential()

@@ -1,7 +1,6 @@
 import os
 from pathlib import Path
 from prettyconf import config
-from cryptography.fernet import Fernet
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -9,20 +8,29 @@ SECRET_KEY = config("SECRET_KEY")
 DEBUG = config("DEBUG", default=False, cast=config.boolean)
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1', cast=lambda v: [s.strip() for s in v.split(',')])
 
-ENCRYPTION_KEY = config("ENCRYPTION_KEY")
-cipher_suite = Fernet(ENCRYPTION_KEY.encode())
+# Chaves Fernet para os dados sensíveis (credenciais SSH). A primeira cifra;
+# todas decifram. Rotação: adicione a nova no início, rode
+# `manage.py rotate_encryption_keys` e então remova a antiga.
+ENCRYPTION_KEYS = config(
+    "ENCRYPTION_KEYS",
+    default=config("ENCRYPTION_KEY", default=""),
+    cast=lambda v: [k.strip() for k in v.split(",") if k.strip()],
+)
 
 # Timeouts (segundos) das consultas SSH aos servidores de log
 SSH_CONNECT_TIMEOUT = config("SSH_CONNECT_TIMEOUT", default=10, cast=int)
 SSH_COMMAND_TIMEOUT = config("SSH_COMMAND_TIMEOUT", default=120, cast=int)
 
 LOGIN_URL = 'login'
-LOGIN_REDIRECT_URL = 'servers:server_list'
+LOGIN_REDIRECT_URL = 'servers:list'
 LOGOUT_REDIRECT_URL = 'login'
 
 INSTALLED_APPS = [
     # my apps
+    'apps.core.apps.CoreConfig',
+    'apps.organizations.apps.OrganizationsConfig',
     'apps.servers.apps.ServersConfig',
+    'apps.audit.apps.AuditConfig',
     # django apps
     'django.contrib.admin',
     'django.contrib.auth',
@@ -54,6 +62,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'apps.organizations.context_processors.organization',
             ],
         },
     },
@@ -61,6 +70,22 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'config.wsgi.application'
 
+
+# Segurança em produção (DEBUG=False atrás de HTTPS)
+if not DEBUG:
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    SECURE_REFERRER_POLICY = 'same-origin'
+    CSRF_TRUSTED_ORIGINS = config(
+        'CSRF_TRUSTED_ORIGINS', default='',
+        cast=lambda v: [s.strip() for s in v.split(',') if s.strip()],
+    )
+
+SESSION_COOKIE_AGE = config('SESSION_COOKIE_AGE', default=8 * 60 * 60, cast=int)
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+X_FRAME_OPTIONS = 'DENY'
 
 DATABASES = {
     'default': {

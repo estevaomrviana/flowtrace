@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+
+{% block title %}Servidores · FlowTrace{% endblock %}
+
+{% block breadcrumb %}
+<span>{{ organization }}</span>
+<i class="lni lni-chevron-right"></i>
+<span class="ft-crumbs__current">Servidores</span>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+
+    <div class="ft-page-head">
+        <div>
+            <h1>Servidores</h1>
+            <p>
+                {{ servers|length }} de {% if organization.max_servers is None %}ilimitados{% else %}{{ organization.max_servers }}{% endif %} no plano.
+                {% if not organization.can_manage_servers %}O cadastro é feito pela equipe FlowTrace.{% endif %}
+            </p>
+        </div>
+        {% if membership.can_manage_servers %}
+            {% if organization.has_server_quota %}
+            <a href="{% url 'servers:create' %}" class="btn btn-primary"><i class="lni lni-plus"></i> Novo servidor</a>
+            {% else %}
+            <span class="ft-badge ft-badge--neutral">Limite do plano atingido</span>
+            {% endif %}
+        {% endif %}
+    </div>
+
+    {% if servers %}
+    <div class="ft-card ft-table-card">
+        <table class="ft-table">
+            <thead>
+                <tr>
+                    <th>Servidor</th>
+                    <th>Acesso</th>
+                    <th>Chave do host</th>
+                    <th>Situação</th>
+                    <th class="ft-table__actions"><span class="visually-hidden">Ações</span></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for server in servers %}
+                {% with cred=server.credential %}
+                <tr>
+                    <td data-label="Servidor">
+                        <div class="ft-cell-title">{{ server.name }}</div>
+                        <div class="ft-cell-sub mono">{{ server.host }}:{{ server.port }}</div>
+                    </td>
+                    <td data-label="Acesso">
+                        {% if cred %}
+                        <span class="mono">{{ cred.username }}</span>
+                        <span class="ft-cell-sub">· {{ cred.get_auth_method_display|lower }}</span>
+                        {% else %}<span class="text-body-secondary">Não configurado</span>{% endif %}
+                    </td>
+                    <td data-label="Chave do host">
+                        {% if cred.host_key %}
+                        <span class="ft-badge ft-badge--exact" title="Verificada em {{ cred.host_key_verified_at|date:'d/m/Y H:i' }}"><i class="lni lni-shield"></i> Fixada</span>
+                        {% else %}
+                        <span class="ft-badge ft-badge--neutral">Aguardando 1ª conexão</span>
+                        {% endif %}
+                    </td>
+                    <td data-label="Situação">
+                        {% if server.managed_by_platform %}<span class="ft-badge ft-badge--info">Gerenciado pela plataforma</span>{% endif %}
+                        {% if not server.is_active %}<span class="ft-badge ft-badge--neutral">Inativo</span>{% elif not server.managed_by_platform %}<span class="ft-badge ft-badge--exact">Ativo</span>{% endif %}
+                    </td>
+                    <td class="ft-table__actions">
+                        <form method="post" action="{% url 'servers:test' server.pk %}" data-loading class="d-inline">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-outline-secondary btn-sm" data-loading-text="Testando…"><i class="lni lni-pulse"></i> Testar</button>
+                        </form>
+                        {% if not server.managed_by_platform and membership.can_manage_servers %}
+                        <div class="dropdown d-inline">
+                            <button class="btn btn-outline-secondary btn-sm" type="button" data-bs-toggle="dropdown" aria-label="Mais ações"><i class="lni lni-more-alt"></i></button>
+                            <ul class="dropdown-menu dropdown-menu-end ft-menu">
+                                <li><a class="dropdown-item" href="{% url 'servers:update' server.pk %}"><i class="lni lni-pencil me-2"></i>Editar</a></li>
+                                {% if cred.host_key %}
+                                <li>
+                                    <form method="post" action="{% url 'servers:reset_host_key' server.pk %}">
+                                        {% csrf_token %}
+                                        <button type="submit" class="dropdown-item"><i class="lni lni-reload me-2"></i>Redefinir chave do host</button>
+                                    </form>
+                                </li>
+                                {% endif %}
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item text-danger" href="{% url 'servers:delete' server.pk %}"><i class="lni lni-trash-can me-2"></i>Excluir</a></li>
+                            </ul>
+                        </div>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endwith %}
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="ft-card ft-empty">
+        <i class="lni lni-database"></i>
+        <h2>Nenhum servidor</h2>
+        {% if membership.can_manage_servers %}
+        <p>Cadastre o primeiro servidor de logs da sua organização.</p>
+        <a href="{% url 'servers:create' %}" class="btn btn-primary"><i class="lni lni-plus"></i> Novo servidor</a>
+        {% else %}
+        <p>Os servidores são cadastrados pela equipe FlowTrace. Entre em contato com o suporte.</p>
+        {% endif %}
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}

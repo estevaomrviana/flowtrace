@@ -1,10 +1,12 @@
 import json
 from datetime import date, datetime
 
-from django.contrib.auth import get_user_model
 from django.test import SimpleTestCase, TestCase
 from django.urls import reverse
 from unittest import mock
+
+from apps.audit.models import SearchLog
+from apps.core.testing import make_member, make_organization, make_server
 
 from .models import Server
 from .services.exceptions import NFDumpOutputError, NoLogsFound, RemoteCommandError
@@ -169,9 +171,10 @@ class SignedDeltaTests(SimpleTestCase):
 class SearchViewTests(TestCase):
 
     def setUp(self):
-        self.user = get_user_model().objects.create_user("op", password="x")
-        self.server = Server.objects.create(name="cgnat", host="10.0.0.1", log_path="/logs")
-        self.url = reverse("servers:server_flow_search", args=[self.server.pk])
+        self.org = make_organization()
+        self.user = make_member(self.org)
+        self.server = make_server(self.org)
+        self.url = reverse("servers:search", args=[self.server.pk])
         self.params = {"ip": "203.0.113.1", "datetime": "2026-03-17T16:40:00", "minute_margin": "5"}
 
     def test_requires_login(self):
@@ -189,7 +192,7 @@ class SearchViewTests(TestCase):
 
     def test_server_list(self):
         self.client.force_login(self.user)
-        response = self.client.get(reverse("servers:server_list"))
+        response = self.client.get(reverse("servers:list"))
         self.assertContains(response, "cgnat")
 
     def _fake(self, responses):
@@ -205,18 +208,50 @@ class SearchViewTests(TestCase):
         self.assertContains(response, "100.64.0.10")
         self.assertContains(response, "Exato")
 
+        log = SearchLog.objects.get()
+        self.assertEqual((log.organization, log.user, log.result_count), (self.org, self.user, 1))
+        self.assertEqual(log.status, SearchLog.Status.SUCCESS)
+
         with self._fake({"2026/03/17": CommandResult(0, stdout, "")}):
             response = self.client.get(self.url, {**self.params, "export": "csv"})
         self.assertEqual(response["Content-Type"], "text/csv; charset=utf-8")
         self.assertIn("100.64.0.10", response.content.decode("utf-8-sig"))
+        self.assertEqual(SearchLog.objects.filter(action=SearchLog.Action.EXPORT).count(), 1)
 
     def test_no_logs_message(self):
         self.client.force_login(self.user)
         with self._fake({}):
             response = self.client.get(self.url, self.params)
         self.assertContains(response, "Sem logs para o período")
+        self.assertEqual(SearchLog.objects.get().status, SearchLog.Status.NO_LOGS)
 
     def test_invalid_ip(self):
         self.client.force_login(self.user)
         response = self.client.get(self.url, {**self.params, "ip": "999.1.1.1"})
         self.assertContains(response, "has-error")
+
+    def test_cannot_search_other_organization_server(self):
+        other = make_server(make_organization())
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("servers:search", args=[other.pk]), self.params)
+        self.assertEqual(response.status_code, 404)
+
+    def test_inactive_server_is_hidden(self):
+        self.server.is_active = False
+        self.server.save()
+        self.client.force_login(self.user)
+        self.assertEqual(self.client.get(self.url).status_code, 404)
+
+    def test_user_without_organization(self):
+        from django.contrib.auth import get_user_model
+        loner = get_user_model().objects.create_user("loner", password="x")
+        self.client.force_login(loner)
+        response = self.client.get(reverse("servers:list"))
+        self.assertEqual(response.status_code, 403)
+        self.assertContains(response, "não está vinculada", status_code=403)
+
+    def test_inactive_organization_blocks_access(self):
+        self.org.is_active = False
+        self.org.save()
+        self.client.force_login(self.user)
+        self.assertEqual(self.client.get(self.url).status_code, 403)
