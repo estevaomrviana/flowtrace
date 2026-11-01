@@ -21,7 +21,9 @@ urlpatterns = [
         name='password_change',
     ),
     path('accounts/', include('django.contrib.auth.urls')),
+    path('organizacao/assinantes/', include('apps.subscribers.urls', namespace='subscribers')),
     path('organizacao/', include('apps.organizations.urls', namespace='organizations')),
+    path('requisicoes/', include('apps.cases.urls', namespace='cases')),
     path('historico/', include('apps.audit.urls', namespace='audit')),
     path('', include('apps.servers.urls', namespace='servers')),
 ]

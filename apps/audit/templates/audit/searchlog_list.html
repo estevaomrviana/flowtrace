@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load tz flowtrace %}
 
 {% block title %}Histórico · FlowTrace{% endblock %}
 
@@ -43,7 +44,7 @@
                     <td data-label="Servidor">{{ log.server_name }}</td>
                     <td data-label="Consulta">
                         <span class="mono ft-ip">{{ log.query_ip }}{% if log.query_port %}:{{ log.query_port }}{% endif %}</span>
-                        <div class="ft-cell-sub mono">{{ log.query_datetime|date:"d/m/Y H:i:s" }} ± {{ log.minute_margin }} min</div>
+                        <div class="ft-cell-sub mono">{% if log.query_timezone %}{{ log.query_datetime|timezone:log.query_timezone|date:"d/m/Y H:i:s" }} <span title="{{ log.query_timezone|tz_label }}">{{ log.query_timezone }}</span>{% else %}{{ log.query_datetime|date:"d/m/Y H:i:s" }}{% endif %} ± {{ log.minute_margin }} min</div>
                     </td>
                     <td data-label="Resultado">
                         {% if log.status == "success" %}
@@ -53,12 +54,13 @@
                         {% else %}
                         <span class="ft-badge ft-badge--danger" title="Código {{ log.error_id }}">Erro</span>
                         {% endif %}
+                        {% if log.case_id %}<a class="ft-badge ft-badge--info" href="{% url 'cases:detail' log.case_id %}"><i class="lni lni-folder"></i> Requisição</a>{% endif %}
                         {% if log.action == "export" %}<span class="ft-badge ft-badge--info"><i class="lni lni-download"></i> CSV</span>{% endif %}
                     </td>
                     <td class="ft-table__actions">
                         {% if log.server_id %}
                         <a class="btn btn-outline-secondary btn-sm" title="Repetir busca"
-                           href="{% url 'servers:search' log.server_id %}?ip={{ log.query_ip }}&amp;datetime={{ log.query_datetime|date:'Y-m-d\TH:i:s' }}&amp;minute_margin={{ log.minute_margin }}{% if log.query_port %}&amp;port={{ log.query_port }}{% endif %}">
+                           href="{% url 'servers:search' log.server_id %}?ip={{ log.query_ip }}&amp;datetime={% if log.query_timezone %}{{ log.query_datetime|timezone:log.query_timezone|date:'Y-m-d\TH:i:s' }}&amp;timezone={{ log.query_timezone|urlencode }}{% else %}{{ log.query_datetime|date:'Y-m-d\TH:i:s' }}{% endif %}&amp;minute_margin={{ log.minute_margin }}{% if log.query_port %}&amp;port={{ log.query_port }}{% endif %}">
                             <i class="lni lni-reload"></i> Repetir
                         </a>
                         {% endif %}

@@ -34,3 +34,12 @@ def make_server(organization, password='segredo', **kwargs):
     server = Server.objects.create(organization=organization, **kwargs)
     ServerCredential.objects.create(server=server, username='nf', password=password)
     return server
+
+
+def raw_column(model, column, pk):
+    """Valor gravado no banco, sem passar pelo campo (ex.: token de um campo cifrado)."""
+    from django.db import connection
+
+    with connection.cursor() as cursor:
+        cursor.execute(f'SELECT {column} FROM {model._meta.db_table} WHERE id = %s', [pk])
+        return cursor.fetchone()[0]

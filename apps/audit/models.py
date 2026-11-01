@@ -46,7 +46,12 @@ class SearchLog(models.Model):
     query_ip = models.GenericIPAddressField('IP consultado', db_index=True)
     query_port = models.PositiveIntegerField('porta', null=True, blank=True)
     query_datetime = models.DateTimeField('horário consultado')
+    query_timezone = models.CharField('fuso informado', max_length=40, blank=True)
     minute_margin = models.PositiveSmallIntegerField('margem (min)')
+    case = models.ForeignKey(
+        'cases.Case', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='+', verbose_name='requisição',
+    )
 
     result_count = models.PositiveIntegerField('resultados', default=0)
     error_id = models.CharField('código do erro', max_length=16, blank=True)

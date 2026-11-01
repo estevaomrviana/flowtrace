@@ -512,7 +512,7 @@ h1, h2, h3 {
 
 @media (min-width: 1100px) {
     .ft-search__grid {
-        grid-template-columns: 1.3fr 1.4fr .8fr .8fr auto;
+        grid-template-columns: 1.2fr 1.4fr 1.2fr .7fr .7fr auto;
         align-items: start;
     }
     .ft-field--ip, .ft-field--datetime, .ft-field--submit { grid-column: auto; }
@@ -970,3 +970,142 @@ textarea.form-control { min-height: 120px; font-size: .8125rem; }
     display: grid;
     gap: 16px;
 }
+
+/* ---------- Assinante (resultado da correlação) ---------- */
+
+.ft-subscriber { white-space: normal; min-width: 180px; }
+.ft-subscriber + .ft-subscriber { margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--ft-border); }
+.ft-subscriber__login { display: flex; align-items: center; gap: 6px; font-weight: 600; }
+.ft-subscriber__login .lni { color: var(--ft-accent); }
+.ft-subscriber__field { font-size: .85rem; }
+.ft-subscriber__field span { color: var(--ft-muted); }
+
+.ft-text-warning { color: var(--ft-warning); }
+
+/* ---------- Requisições ---------- */
+
+.ft-page-head__actions { display: flex; gap: 8px; align-items: center; }
+.ft-page-head h1 .ft-badge { font-size: .75rem; vertical-align: middle; margin-left: 6px; }
+
+.ft-tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 16px;
+    border-bottom: 1px solid var(--ft-border);
+    overflow-x: auto;
+}
+
+.ft-tabs__link {
+    padding: 8px 12px;
+    margin-bottom: -1px;
+    border-bottom: 2px solid transparent;
+    color: var(--ft-muted);
+    font-size: .875rem;
+    font-weight: 500;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.ft-tabs__link:hover { color: var(--ft-text); }
+.ft-tabs__link.is-active { color: var(--ft-accent); border-bottom-color: var(--ft-accent); }
+
+.ft-case-info { padding: 16px 20px; margin-bottom: 24px; }
+.ft-case-info__notes { margin: 12px 0 0; padding-top: 12px; border-top: 1px solid var(--ft-border); color: var(--ft-muted); font-size: .875rem; }
+
+.ft-dl--inline {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px 32px;
+    margin: 0;
+}
+
+.ft-dl--inline dt { margin: 0 0 2px; }
+.ft-dl--inline dd { margin: 0; }
+
+.ft-section-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.ft-section-head h2 { font-size: 1.05rem; margin: 0; }
+
+.ft-items { display: grid; gap: 12px; }
+
+.ft-item { overflow: hidden; }
+.ft-item--error { border-color: var(--ft-danger-soft); }
+
+.ft-item__head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px 16px;
+    padding: 14px 16px;
+}
+
+.ft-item__pos {
+    display: inline-grid;
+    place-items: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    background: var(--ft-surface-2);
+    border: 1px solid var(--ft-border);
+    color: var(--ft-muted);
+    font-size: .8rem;
+    font-weight: 600;
+}
+
+.ft-item__query { flex: 1 1 280px; min-width: 0; }
+.ft-item__actions { display: flex; gap: 4px; }
+
+.ft-item__body {
+    display: grid;
+    gap: 12px;
+    padding: 0 16px 14px 60px;
+}
+
+.ft-item__body .ft-alert { margin: 0; }
+
+.ft-item__subscribers {
+    display: grid;
+    gap: 12px;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+}
+
+.ft-item__subscribers .ft-subscriber + .ft-subscriber { margin: 0; padding: 0; border: 0; }
+
+.ft-item__subscribers .ft-subscriber {
+    padding: 10px 12px;
+    border: 1px solid var(--ft-border);
+    border-radius: 8px;
+    background: var(--ft-surface-2);
+}
+
+.ft-item__details summary { color: var(--ft-muted); font-size: .85rem; cursor: pointer; }
+.ft-item__details .ft-table { margin-top: 8px; font-size: .85rem; }
+.ft-item__details .ft-table td,
+.ft-item__details .ft-table th { padding: 8px 10px; }
+
+.ft-item__foot {
+    padding: 8px 16px;
+    border-top: 1px solid var(--ft-border);
+    background: var(--ft-surface-2);
+    color: var(--ft-muted);
+    font-size: .75rem;
+}
+
+@media (max-width: 575.98px) {
+    .ft-item__body { padding-left: 16px; }
+}
+
+.ft-hash { font-size: .75rem; white-space: normal !important; word-break: break-all; }
+
+@media (min-width: 768px) {
+    .ft-form__grid--3 { grid-template-columns: 1fr 1fr 1fr; }
+}
+
+.ft-span-all { grid-column: 1 / -1; }
+.ft-item.is-running { opacity: .6; pointer-events: none; }

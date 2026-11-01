@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block title %}Fontes de assinantes · FlowTrace{% endblock %}
+
+{% block breadcrumb %}
+<span>{{ organization }}</span>
+<i class="lni lni-chevron-right"></i>
+<span class="ft-crumbs__current">Assinantes</span>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+
+    <div class="ft-page-head">
+        <div>
+            <h1>Fontes de assinantes</h1>
+            <p>Bancos do RADIUS usados para identificar o assinante dono do IP privado.</p>
+        </div>
+        {% if membership.can_manage_servers %}
+        <a href="{% url 'subscribers:create' %}" class="btn btn-primary"><i class="lni lni-plus"></i> Nova fonte</a>
+        {% endif %}
+    </div>
+
+    {% if sources %}
+    <div class="ft-card ft-table-card">
+        <table class="ft-table">
+            <thead>
+                <tr>
+                    <th>Fonte</th>
+                    <th>Acesso</th>
+                    <th>Cadastro</th>
+                    <th>Situação</th>
+                    <th class="ft-table__actions"><span class="visually-hidden">Ações</span></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for source in sources %}
+                <tr>
+                    <td data-label="Fonte">
+                        <div class="ft-cell-title">{{ source.name }}</div>
+                        <div class="ft-cell-sub mono">{{ source.get_engine_display }} · {{ source.db_name }}.{{ source.table }}</div>
+                    </td>
+                    <td data-label="Acesso">
+                        <span class="mono">{{ source.db_host }}:{{ source.db_port }}</span>
+                        <div class="ft-cell-sub">
+                            {% if source.uses_tunnel %}<i class="lni lni-lock-alt"></i> via {{ source.ssh_server|default:"servidor removido" }}{% else %}Conexão direta{% endif %}
+                        </div>
+                    </td>
+                    <td data-label="Cadastro">
+                        {% if source.customer_query %}<span class="ft-badge ft-badge--exact">Configurado</span>{% else %}<span class="ft-badge ft-badge--neutral">Só login</span>{% endif %}
+                    </td>
+                    <td data-label="Situação">
+                        {% if source.managed_by_platform %}<span class="ft-badge ft-badge--info">Gerenciada pela plataforma</span>{% endif %}
+                        {% if not source.is_active %}<span class="ft-badge ft-badge--neutral">Inativa</span>{% elif not source.managed_by_platform %}<span class="ft-badge ft-badge--exact">Ativa</span>{% endif %}
+                    </td>
+                    <td class="ft-table__actions">
+                        <form method="post" action="{% url 'subscribers:test' source.pk %}" data-loading class="d-inline">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-outline-secondary btn-sm" data-loading-text="Testando…"><i class="lni lni-pulse"></i> Testar</button>
+                        </form>
+                        {% if not source.managed_by_platform and membership.can_manage_servers %}
+                        <div class="dropdown d-inline">
+                            <button class="btn btn-outline-secondary btn-sm" type="button" data-bs-toggle="dropdown" aria-label="Mais ações"><i class="lni lni-more-alt"></i></button>
+                            <ul class="dropdown-menu dropdown-menu-end ft-menu">
+                                <li><a class="dropdown-item" href="{% url 'subscribers:update' source.pk %}"><i class="lni lni-pencil me-2"></i>Editar</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item text-danger" href="{% url 'subscribers:delete' source.pk %}"><i class="lni lni-trash-can me-2"></i>Excluir</a></li>
+                            </ul>
+                        </div>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="ft-card ft-empty">
+        <i class="lni lni-users"></i>
+        <h2>Nenhuma fonte de assinantes</h2>
+        <p>Sem uma fonte, a busca para no IP privado. Conecte o banco do RADIUS (tabela radacct) para identificar o login e o cliente automaticamente.</p>
+        {% if membership.can_manage_servers %}
+        <a href="{% url 'subscribers:create' %}" class="btn btn-primary"><i class="lni lni-plus"></i> Nova fonte</a>
+        {% else %}
+        <p>As fontes são cadastradas pela equipe FlowTrace. Entre em contato com o suporte.</p>
+        {% endif %}
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}

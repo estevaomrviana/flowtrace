@@ -87,6 +87,9 @@
                 <a href="{% url 'servers:list' %}" class="ft-subnav__link{% if section == 'servers' and url_name == 'list' or url_name == 'search' %} is-active{% endif %}">
                     <i class="lni lni-search-alt"></i> Buscar
                 </a>
+                <a href="{% url 'cases:list' %}" class="ft-subnav__link{% if section == 'cases' %} is-active{% endif %}">
+                    <i class="lni lni-folder"></i> Requisições
+                </a>
                 <a href="{% url 'audit:list' %}" class="ft-subnav__link{% if section == 'audit' %} is-active{% endif %}">
                     <i class="lni lni-list"></i> Histórico
                 </a>
@@ -94,6 +97,9 @@
                 <span class="ft-subnav__sep" aria-hidden="true"></span>
                 <a href="{% url 'servers:manage' %}" class="ft-subnav__link{% if section == 'servers' and url_name != 'list' and url_name != 'search' %} is-active{% endif %}">
                     <i class="lni lni-database"></i> Servidores
+                </a>
+                <a href="{% url 'subscribers:list' %}" class="ft-subnav__link{% if section == 'subscribers' %} is-active{% endif %}">
+                    <i class="lni lni-user"></i> Assinantes
                 </a>
                 <a href="{% url 'organizations:members' %}" class="ft-subnav__link{% if section == 'organizations' and url_name != 'detail' %} is-active{% endif %}">
                     <i class="lni lni-users"></i> Usuários

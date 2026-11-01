@@ -25,7 +25,7 @@ class ServerAdmin(admin.ModelAdmin):
     list_select_related = ('organization', 'credential')
     readonly_fields = ('host_key_status', 'created_by', 'created_at', 'updated_at')
     fieldsets = (
-        (None, {'fields': ('organization', 'name', 'host', 'port', 'log_path', 'is_active', 'managed_by_platform')}),
+        (None, {'fields': ('organization', 'name', 'host', 'port', 'log_path', 'timezone', 'is_active', 'managed_by_platform')}),
         ('Acesso SSH', {
             'fields': ('username', 'auth_method', 'password', 'private_key', 'key_passphrase', 'host_key_status'),
             'description': 'Os segredos são criptografados e nunca exibidos. Deixe em branco para manter os valores salvos.',

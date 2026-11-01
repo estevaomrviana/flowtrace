@@ -1,5 +1,7 @@
 from django import template
 
+from apps.core.timezones import TIMEZONE_LABELS
+
 register = template.Library()
 
 
@@ -23,3 +25,15 @@ def signed_delta(seconds):
     if minutes:
         return f"{sign}{minutes}m {secs:02d}s"
     return f"{sign}{secs}s"
+
+
+@register.filter
+def tz_label(name):
+    """Nome amigável do fuso: "UTC" → "UTC (GMT+0)"."""
+    return TIMEZONE_LABELS.get(name, name)
+
+
+@register.filter
+def field_label(name):
+    """Coluna da consulta de cadastro como rótulo: "cpf_cnpj" → "Cpf cnpj"."""
+    return str(name).replace("_", " ").strip().capitalize()

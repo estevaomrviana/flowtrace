@@ -5,6 +5,7 @@ from django.core.exceptions import ValidationError
 from django.utils import timezone
 
 from apps.core.forms import StyledFormMixin
+from apps.core.timezones import TIMEZONE_CHOICES
 
 from .models import Server, ServerCredential
 from .services.flow_service import FlowQuery
@@ -40,6 +41,12 @@ class FlowSearchForm(StyledFormMixin, forms.Form):
         input_formats=["%Y-%m-%dT%H:%M:%S", "%Y-%m-%dT%H:%M"],
     )
 
+    timezone = forms.ChoiceField(
+        label="Fuso do horário",
+        choices=TIMEZONE_CHOICES,
+        required=False,
+    )
+
     port = forms.IntegerField(
         label="Porta",
         required=False,
@@ -55,11 +62,24 @@ class FlowSearchForm(StyledFormMixin, forms.Form):
         initial=5,
     )
 
+    def __init__(self, *args, server, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.server = server
+        # Sem fuso informado (ex.: links antigos do histórico), vale o horário
+        # do servidor de logs, e o select precisa mostrar isso.
+        self.fields["timezone"].initial = server.timezone
+        if self.is_bound and not self.data.get("timezone"):
+            self.data = self.data.copy()
+            self.data["timezone"] = server.timezone
+
     def to_query(self):
         data = self.cleaned_data
-        return FlowQuery(
+        return FlowQuery.from_input(
             ip=data["ip"],
-            target=timezone.make_naive(data["datetime"]),
+            # O campo devolve o horário no fuso ativo; desfeito, é o que foi digitado.
+            informed=timezone.make_naive(data["datetime"]),
+            input_tz=data["timezone"] or self.server.timezone,
+            server=self.server,
             port=data["port"],
             minute_margin=data["minute_margin"],
         )
@@ -93,7 +113,7 @@ class ServerForm(StyledFormMixin, forms.ModelForm):
 
     class Meta:
         model = Server
-        fields = ("name", "host", "port", "log_path", "is_active")
+        fields = ("name", "host", "port", "log_path", "timezone", "is_active")
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

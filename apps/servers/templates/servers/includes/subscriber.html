@@ -1,0 +1,13 @@
+{% load flowtrace %}<div class="ft-subscriber">
+    <div class="ft-subscriber__login">
+        <i class="lni lni-user"></i>
+        <span class="mono">{{ session.login|default:"(sem login)" }}</span>
+        <button type="button" class="ft-copy" data-copy="{{ session.login }}" title="Copiar login" aria-label="Copiar login {{ session.login }}"><i class="lni lni-files"></i></button>
+    </div>
+    {% for key, value in session.customer.items %}{% if value %}
+    <div class="ft-subscriber__field"><span>{{ key|field_label }}</span> {{ value }}</div>
+    {% endif %}{% endfor %}
+    <div class="ft-cell-sub mono">
+        {{ session.started_at|date:"d/m H:i:s" }} → {% if session.is_open %}<span title="Sem Accounting-Stop: ainda conectado ou a sessão caiu sem registro de fim">em aberto</span>{% else %}{{ session.stopped_at|date:"d/m H:i:s" }}{% endif %}{% if session.mac %} · {{ session.mac }}{% endif %}
+    </div>
+</div>

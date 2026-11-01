@@ -163,6 +163,20 @@ class SSHClient:
 
         return CommandResult(exit_status=status, stdout=out, stderr=err)
 
+    def open_direct_channel(self, host, port):
+        """Canal TCP até host:port partindo do servidor SSH (base do SSHTunnel)."""
+        if self.client is None:
+            raise ServerConnectionError("Cliente SSH não conectado")
+
+        try:
+            return self.client.get_transport().open_channel(
+                "direct-tcpip", (host, port), ("127.0.0.1", 0), timeout=self.connect_timeout,
+            )
+        except (paramiko.SSHException, OSError) as e:
+            raise ServerConnectionError(
+                f"{self.server.host} não conseguiu abrir conexão com {host}:{port}: {e}"
+            ) from e
+
     def close(self):
         if self.client is not None:
             self.client.close()

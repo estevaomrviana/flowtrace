@@ -77,6 +77,24 @@
             {% endif %}
         </div>
 
+        {% if result.query.converted %}
+        <div class="ft-alert ft-alert--info">
+            <i class="lni lni-timer"></i>
+            <div>
+                Horário informado <span class="mono">{{ result.query.informed|date:"d/m/Y H:i:s" }}</span> ({{ result.query.input_tz|tz_label }})
+                corresponde a <span class="mono">{{ result.query.target|date:"d/m/Y H:i:s" }}</span> no fuso dos logs ({{ result.query.log_tz|tz_label }}).
+                Os horários abaixo estão no fuso dos logs.
+            </div>
+        </div>
+        {% endif %}
+
+        {% for message in subscriber_errors %}
+        <div class="ft-alert ft-alert--warning">
+            <i class="lni lni-warning"></i>
+            <div><strong>Fonte de assinantes indisponível</strong>{{ message }}</div>
+        </div>
+        {% endfor %}
+
         {% if result.days_missing %}
         <div class="ft-alert ft-alert--warning">
             <i class="lni lni-warning"></i>
@@ -94,10 +112,11 @@
                         <th>Diferença</th>
                         <th>IP de origem</th>
                         <th>Bloco de portas</th>
+                        {% if has_sources %}<th>Assinante</th>{% endif %}
                     </tr>
                 </thead>
                 <tbody>
-                    {% for r in result.records %}
+                    {% for r, sessions in rows %}
                     <tr>
                         <td data-label="Correspondência">
                             {% if r.is_exact %}
@@ -117,6 +136,15 @@
                         <td data-label="Bloco de portas" class="mono">
                             {% if r.has_port_block %}{{ r.port_block_start }}–{{ r.port_block_end }}{% elif r.translated_port %}{{ r.translated_port }}{% else %}<span class="text-body-secondary">—</span>{% endif %}
                         </td>
+                        {% if has_sources %}
+                        <td data-label="Assinante">
+                            {% for s in sessions %}
+                            {% include "servers/includes/subscriber.html" with session=s %}
+                            {% empty %}
+                            <span class="text-body-secondary">Não identificado</span>
+                            {% endfor %}
+                        </td>
+                        {% endif %}
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -134,7 +162,7 @@
     {% elif not form.is_bound %}
     <div class="ft-hint ft-result-gap">
         <i class="lni lni-bulb"></i>
-        <span>Informe o IP público e o horário exatamente como constam na solicitação. A porta de origem, quando informada, restringe o resultado ao bloco que a contém.</span>
+        <span>Informe o IP público, o horário e o fuso exatamente como constam na solicitação (pedidos de empresas estrangeiras costumam vir em UTC). A porta de origem, quando informada, restringe o resultado ao bloco que a contém.</span>
     </div>
     {% endif %}
 

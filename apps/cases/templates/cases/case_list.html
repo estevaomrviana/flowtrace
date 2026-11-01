@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block title %}Requisições · FlowTrace{% endblock %}
+
+{% block breadcrumb %}
+<span>{{ organization }}</span>
+<i class="lni lni-chevron-right"></i>
+<span class="ft-crumbs__current">Requisições</span>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+
+    <div class="ft-page-head">
+        <div>
+            <h1>Requisições</h1>
+            <p>Ofícios e mandados recebidos, com as consultas e a resposta emitida.{% if not membership.is_admin %} Você vê as requisições que abriu.{% endif %}</p>
+        </div>
+        <a href="{% url 'cases:create' %}" class="btn btn-primary"><i class="lni lni-plus"></i> Nova requisição</a>
+    </div>
+
+    <nav class="ft-tabs" aria-label="Situação">
+        {% for value, label in status_choices %}
+        <a href="?status={{ value }}" class="ft-tabs__link{% if status_filter == value %} is-active{% endif %}">{{ label }}</a>
+        {% endfor %}
+    </nav>
+
+    {% if cases %}
+    <div class="ft-card ft-table-card">
+        <table class="ft-table">
+            <thead>
+                <tr>
+                    <th>Requisição</th>
+                    <th>Órgão</th>
+                    <th>Recebida</th>
+                    <th>Prazo</th>
+                    {% if membership.is_admin %}<th>Aberta por</th>{% endif %}
+                    <th class="ft-table__actions"><span class="visually-hidden">Ações</span></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for case in cases %}
+                <tr>
+                    <td data-label="Requisição">
+                        <a class="ft-cell-title" href="{% url 'cases:detail' case.pk %}">{{ case.number }}</a>
+                        <div class="ft-cell-sub">{{ case.get_kind_display }}</div>
+                    </td>
+                    <td data-label="Órgão">
+                        {{ case.authority }}
+                        <div class="ft-cell-sub">{{ case.get_authority_type_display }}</div>
+                    </td>
+                    <td data-label="Recebida" class="mono">{{ case.received_on|date:"d/m/Y" }}</td>
+                    <td data-label="Prazo">
+                        {% include "cases/includes/deadline.html" %}
+                    </td>
+                    {% if membership.is_admin %}<td data-label="Aberta por">{{ case.created_by.get_username|default:"—" }}</td>{% endif %}
+                    <td class="ft-table__actions">
+                        <a class="btn btn-outline-secondary btn-sm" href="{% url 'cases:detail' case.pk %}">Abrir <i class="lni lni-chevron-right"></i></a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% include "includes/pagination.html" %}
+
+    {% else %}
+    <div class="ft-card ft-empty">
+        <i class="lni lni-folder"></i>
+        <h2>Nenhuma requisição {% for value, label in status_choices %}{% if value == status_filter %}{{ label|lower }}{% endif %}{% endfor %}</h2>
+        <p>Abra uma requisição para cada ofício recebido: inclua os IPs e horários, execute as consultas e emita a resposta em PDF.</p>
+        <a href="{% url 'cases:create' %}" class="btn btn-primary"><i class="lni lni-plus"></i> Nova requisição</a>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}

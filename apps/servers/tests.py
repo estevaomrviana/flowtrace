@@ -255,3 +255,70 @@ class SearchViewTests(TestCase):
         self.org.save()
         self.client.force_login(self.user)
         self.assertEqual(self.client.get(self.url).status_code, 403)
+
+
+class TimezoneQueryTests(SimpleTestCase):
+
+    def test_from_input_converts_to_log_timezone(self):
+        server = Server(name="cgnat", timezone="America/Fortaleza")
+        query = FlowQuery.from_input(
+            ip="203.0.113.1", informed=datetime(2026, 3, 17, 19, 40), input_tz="UTC", server=server,
+        )
+        self.assertEqual(query.target, datetime(2026, 3, 17, 16, 40))
+        self.assertEqual(query.informed, datetime(2026, 3, 17, 19, 40))
+        self.assertTrue(query.converted)
+        self.assertEqual(query.aware_target.utcoffset().total_seconds(), -3 * 3600)
+
+    def test_same_offset_is_not_a_conversion(self):
+        server = Server(name="cgnat", timezone="America/Fortaleza")
+        query = FlowQuery.from_input(
+            ip="203.0.113.1", informed=TARGET, input_tz="America/Sao_Paulo", server=server,
+        )
+        self.assertFalse(query.converted)
+
+    def test_offset_label(self):
+        from apps.core.timezones import utc_offset_label
+        self.assertEqual(utc_offset_label(TARGET, "America/Fortaleza"), "UTC−03:00")
+        self.assertEqual(utc_offset_label(TARGET, "UTC"), "UTC+00:00")
+
+
+class SearchTimezoneAndSubscriberTests(TestCase):
+
+    def setUp(self):
+        self.org = make_organization()
+        self.user = make_member(self.org)
+        self.server = make_server(self.org, timezone="America/Fortaleza")
+        self.url = reverse("servers:search", args=[self.server.pk])
+        self.client.force_login(self.user)
+
+    def test_utc_input_searches_converted_window(self):
+        ssh = FakeSSH({"2026/03/17": CommandResult(0, json.dumps([flow("2026-03-17T16:40:05")]), "")})
+        with mock.patch("apps.servers.services.flow_service.SSHClient", ssh):
+            response = self.client.get(self.url, {
+                "ip": "203.0.113.1", "datetime": "2026-03-17T19:40:00", "timezone": "UTC", "minute_margin": "5",
+            })
+        self.assertIn("2026/03/17.16:35:00-2026/03/17.16:45:00", ssh.commands[0])
+        self.assertContains(response, "no fuso dos logs")
+        self.assertEqual(SearchLog.objects.get().query_timezone, "UTC")
+
+    def test_missing_timezone_uses_server_timezone(self):
+        ssh = FakeSSH({"2026/03/17": CommandResult(0, "[]", "")})
+        with mock.patch("apps.servers.services.flow_service.SSHClient", ssh):
+            response = self.client.get(self.url, {"ip": "203.0.113.1", "datetime": "2026-03-17T16:40:00", "minute_margin": "5"})
+        self.assertIn("2026/03/17.16:35:00-2026/03/17.16:45:00", ssh.commands[0])
+        self.assertContains(response, '<option value="America/Fortaleza" selected>')
+
+    def test_subscriber_column_and_csv(self):
+        from apps.subscribers.services import SubscriberLookup
+        from apps.subscribers.tests import FakeDB, make_source, session_row
+
+        lookup = SubscriberLookup([make_source()], connector=FakeDB([session_row(login="joao.pppoe")]).connector)
+        ssh = FakeSSH({"2026/03/17": CommandResult(0, json.dumps([flow("2026-03-17T16:40:05")]), "")})
+        params = {"ip": "203.0.113.1", "datetime": "2026-03-17T16:40:00", "minute_margin": "5"}
+
+        with mock.patch("apps.servers.services.flow_service.SSHClient", ssh), \
+                mock.patch("apps.servers.views.SubscriberLookup.for_organization", return_value=lookup):
+            response = self.client.get(self.url, params)
+            self.assertContains(response, "joao.pppoe")
+            csv_response = self.client.get(self.url, {**params, "export": "csv"})
+        self.assertIn("joao.pppoe", csv_response.content.decode("utf-8-sig"))

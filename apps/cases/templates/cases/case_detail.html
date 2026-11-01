@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+
+{% block title %}{{ case.number }} · FlowTrace{% endblock %}
+
+{% block breadcrumb %}
+<a href="{% url 'cases:list' %}">Requisições</a>
+<i class="lni lni-chevron-right"></i>
+<span class="ft-crumbs__current">{{ case.number }}</span>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+
+    <div class="ft-page-head">
+        <div>
+            <h1>
+                {{ case.number }}
+                {% if case.status == "open" %}<span class="ft-badge ft-badge--info">{{ case.get_status_display }}</span>
+                {% elif case.status == "answered" %}<span class="ft-badge ft-badge--exact"><i class="lni lni-checkmark-circle"></i> {{ case.get_status_display }}</span>
+                {% else %}<span class="ft-badge ft-badge--neutral">{{ case.get_status_display }}</span>{% endif %}
+            </h1>
+            <p>{{ case.authority }} · {{ case.get_authority_type_display }}</p>
+        </div>
+        <div class="ft-page-head__actions">
+            <form method="post" action="{% url 'cases:report' case.pk %}" class="d-inline">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-primary"{% if not items or pending_count %} disabled title="Execute todas as consultas antes de emitir"{% endif %}>
+                    <i class="lni lni-printer"></i> Emitir resposta (PDF)
+                </button>
+            </form>
+            <div class="dropdown d-inline">
+                <button class="btn btn-outline-secondary" type="button" data-bs-toggle="dropdown" aria-label="Mais ações"><i class="lni lni-more-alt"></i></button>
+                <ul class="dropdown-menu dropdown-menu-end ft-menu">
+                    <li><a class="dropdown-item" href="{% url 'cases:update' case.pk %}"><i class="lni lni-pencil me-2"></i>Editar dados do ofício</a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    {% for value, label in case.Status.choices %}{% if value != case.status %}
+                    <li>
+                        <form method="post" action="{% url 'cases:status' case.pk %}">
+                            {% csrf_token %}
+                            <input type="hidden" name="status" value="{{ value }}">
+                            <button type="submit" class="dropdown-item">
+                                {% if value == "answered" %}<i class="lni lni-checkmark-circle me-2"></i>Marcar como respondida
+                                {% elif value == "archived" %}<i class="lni lni-archive me-2"></i>Arquivar
+                                {% else %}<i class="lni lni-reload me-2"></i>Reabrir{% endif %}
+                            </button>
+                        </form>
+                    </li>
+                    {% endif %}{% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    {% if case.kind == "administrative" %}
+    <div class="ft-alert ft-alert--warning">
+        <i class="lni lni-warning"></i>
+        <div>
+            <strong>Requisição administrativa</strong>
+            Pelo Marco Civil (art. 10, §3º), autoridades administrativas podem requisitar dados cadastrais; registros de conexão dependem de ordem judicial. Confirme com o jurídico o que pode ser entregue antes de emitir a resposta.
+        </div>
+    </div>
+    {% endif %}
+
+    <section class="ft-card ft-case-info">
+        <dl class="ft-dl ft-dl--inline">
+            <div><dt>Fundamento</dt><dd>{{ case.get_kind_display }}</dd></div>
+            <div><dt>Recebida em</dt><dd class="mono">{{ case.received_on|date:"d/m/Y" }}</dd></div>
+            <div><dt>Prazo</dt><dd>{% include "cases/includes/deadline.html" %}</dd></div>
+            {% if case.requester %}<div><dt>Autoridade</dt><dd>{{ case.requester }}</dd></div>{% endif %}
+            <div><dt>Aberta por</dt><dd>{{ case.created_by.get_username|default:"—" }}</dd></div>
+            {% if case.answered_at %}<div><dt>Respondida em</dt><dd class="mono">{{ case.answered_at|date:"d/m/Y H:i" }}</dd></div>{% endif %}
+        </dl>
+        {% if case.notes %}<p class="ft-case-info__notes">{{ case.notes|linebreaksbr }}</p>{% endif %}
+    </section>
+
+    <div class="ft-section-head">
+        <h2>Consultas <span class="text-body-secondary">({{ items|length }})</span></h2>
+        {% if pending_count and case.is_editable %}
+        <button type="button" class="btn btn-primary btn-sm" data-run-all data-loading-text="Executando…">
+            <i class="lni lni-play"></i> Executar pendentes ({{ pending_count }})
+        </button>
+        {% endif %}
+    </div>
+
+    <div class="ft-items" data-items>
+        {% for item, result in items %}
+        {% include "cases/includes/item.html" %}
+        {% empty %}
+        <div class="ft-card ft-empty ft-empty--inline">
+            <i class="lni lni-clipboard"></i>
+            <h2>Nenhuma consulta</h2>
+            <p>Cole abaixo os IPs e horários que constam no ofício.</p>
+        </div>
+        {% endfor %}
+    </div>
+
+    {% if case.is_editable %}
+    <form method="post" class="ft-card ft-form__section ft-result-gap" id="incluir" novalidate>
+        {% csrf_token %}
+        <header class="ft-form__head">
+            <h2><i class="lni lni-plus"></i> Incluir consultas</h2>
+            <p>Cole as linhas do ofício ou da planilha. As consultas ficam pendentes até serem executadas.</p>
+        </header>
+
+        {% if batch_form.non_field_errors %}
+        <div class="ft-alert ft-alert--danger">
+            <i class="lni lni-warning"></i>
+            <div><strong>Corrija as linhas abaixo</strong><ul class="mb-0 ps-3">{% for error in batch_form.non_field_errors %}<li>{{ error }}</li>{% endfor %}</ul></div>
+        </div>
+        {% endif %}
+
+        <div class="ft-form__grid ft-form__grid--3">
+            {% include "includes/field.html" with field=batch_form.server %}
+            {% include "includes/field.html" with field=batch_form.timezone %}
+            {% include "includes/field.html" with field=batch_form.minute_margin %}
+            <div class="ft-span-all">{% include "includes/field.html" with field=batch_form.lines %}</div>
+        </div>
+        <div class="ft-form__actions mt-3">
+            <button type="submit" class="btn btn-outline-secondary"><i class="lni lni-plus"></i> Incluir consultas</button>
+        </div>
+    </form>
+    {% else %}
+    <div class="ft-hint ft-result-gap">
+        <i class="lni lni-lock-alt"></i>
+        <span>Requisição {{ case.get_status_display|lower }}: as consultas estão congeladas. Reabra para incluir ou executar novamente.</span>
+    </div>
+    {% endif %}
+
+    {% if reports %}
+    <section class="ft-result-gap">
+        <div class="ft-section-head"><h2>Respostas emitidas</h2></div>
+        <div class="ft-card ft-table-card">
+            <table class="ft-table">
+                <thead>
+                    <tr><th>Código</th><th>Emitida</th><th>Por</th><th>Hash dos dados (SHA-256)</th></tr>
+                </thead>
+                <tbody>
+                    {% for report in reports %}
+                    <tr>
+                        <td data-label="Código" class="mono">{{ report.code }}</td>
+                        <td data-label="Emitida" class="mono">{{ report.created_at|date:"d/m/Y H:i" }}</td>
+                        <td data-label="Por">{{ report.username }}</td>
+                        <td data-label="Hash" class="mono ft-hash" title="Hash do arquivo PDF: {{ report.file_sha256 }}">{{ report.content_sha256 }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+    {% endif %}
+
+</div>
+{% endblock %}

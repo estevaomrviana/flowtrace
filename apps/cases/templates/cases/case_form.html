@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block title %}{% if object %}Editar {{ object.number }}{% else %}Nova requisição{% endif %} · FlowTrace{% endblock %}
+
+{% block breadcrumb %}
+<a href="{% url 'cases:list' %}">Requisições</a>
+<i class="lni lni-chevron-right"></i>
+<span class="ft-crumbs__current">{% if object %}{{ object.number }}{% else %}Nova{% endif %}</span>
+{% endblock %}
+
+{% block content %}
+<div class="container ft-narrow">
+
+    <div class="ft-page-head">
+        <div>
+            <h1>{% if object %}Editar requisição{% else %}Nova requisição{% endif %}</h1>
+            <p>Os dados do ofício entram no cabeçalho do PDF de resposta.</p>
+        </div>
+    </div>
+
+    <form method="post" class="ft-form" novalidate>
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+        <div class="ft-alert ft-alert--danger"><i class="lni lni-warning"></i><div>{{ form.non_field_errors|join:" " }}</div></div>
+        {% endif %}
+
+        <section class="ft-card ft-form__section">
+            <header class="ft-form__head">
+                <h2><i class="lni lni-folder"></i> Ofício</h2>
+                <p>Identificação e origem da requisição.</p>
+            </header>
+            <div class="ft-form__grid">
+                <div class="ft-span-2">{% include "includes/field.html" with field=form.number %}</div>
+                {% include "includes/field.html" with field=form.authority_type %}
+                {% include "includes/field.html" with field=form.kind %}
+                <div class="ft-span-2">{% include "includes/field.html" with field=form.authority %}</div>
+                <div class="ft-span-2">{% include "includes/field.html" with field=form.requester %}</div>
+                {% include "includes/field.html" with field=form.received_on %}
+                {% include "includes/field.html" with field=form.deadline %}
+                <div class="ft-span-2">{% include "includes/field.html" with field=form.notes %}</div>
+            </div>
+        </section>
+
+        <div class="ft-form__actions">
+            <a href="{% if object %}{% url 'cases:detail' object.pk %}{% else %}{% url 'cases:list' %}{% endif %}" class="btn btn-outline-secondary">Cancelar</a>
+            <button type="submit" class="btn btn-primary">{% if object %}Salvar alterações{% else %}Abrir requisição{% endif %}</button>
+        </div>
+    </form>
+
+</div>
+{% endblock %}

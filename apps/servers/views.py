@@ -1,6 +1,4 @@
 import csv
-import logging
-import uuid
 
 from django.contrib import messages
 from django.http import Http404, HttpResponse
@@ -12,15 +10,13 @@ from apps.audit.models import SearchLog
 from apps.audit.services import record_search
 from apps.organizations.exceptions import QuotaExceeded
 from apps.organizations.mixins import OrganizationMemberMixin, ServerManagerMixin
+from apps.subscribers.services import SubscriberLookup
 
 from .forms import FlowSearchForm, ServerForm
 from .models import Server
-from .services.exceptions import HostKeyMismatch, NoLogsFound, ServerConnectionError
-from .services.flow_service import FlowService
 from .services.health import check_server
 from .services.registry import register_server
-
-logger = logging.getLogger(__name__)
+from .services.search import run_search
 
 
 # ---------------------------------------------------------------- Busca
@@ -42,91 +38,45 @@ class FlowSearchView(OrganizationMemberMixin, View):
             Server.objects.for_organization(self.organization).active().select_related('credential'),
             pk=pk,
         )
-        form = FlowSearchForm(request.GET or None)
-
-        result = None
-        error = None
+        form = FlowSearchForm(request.GET or None, server=server)
+        outcome = None
 
         if form.is_bound and form.is_valid():
             query = form.to_query()
             exporting = request.GET.get("export") == "csv"
-            result, error = self.run_search(server, query)
+            outcome = run_search(server, query, SubscriberLookup.for_organization(self.organization))
 
             record_search(
                 request=request, membership=self.membership, server=server, query=query,
                 action=SearchLog.Action.EXPORT if exporting else SearchLog.Action.SEARCH,
-                status=self._status(result, error),
-                result_count=len(result.records) if result else 0,
-                error_id=(error or {}).get("id", ""),
+                status=outcome.status,
+                result_count=outcome.result_count,
+                error_id=outcome.error_id,
             )
 
-            if result and exporting:
-                return self.export_csv(result)
+            if outcome.result and exporting:
+                return self.export_csv(outcome)
 
         context = {
             "server": server,
             "form": form,
-            "result": result,
-            "error": error,
+            "result": outcome.result if outcome else None,
+            "error": outcome.error if outcome else None,
+            "rows": self.rows(outcome),
+            "subscriber_errors": outcome.subscribers.errors if outcome and outcome.subscribers else [],
+            "has_sources": outcome is not None and outcome.subscribers is not None,
         }
         return render(request, self.template_name, context)
 
     @staticmethod
-    def _status(result, error):
-        if result is not None:
-            return SearchLog.Status.SUCCESS
-        if error and error["level"] == "info":
-            return SearchLog.Status.NO_LOGS
-        return SearchLog.Status.ERROR
+    def rows(outcome):
+        if outcome is None or outcome.result is None:
+            return []
+        return [(r, outcome.sessions_for(r.source_ip)) for r in outcome.result.records]
 
-    def run_search(self, server, query):
-        try:
-            return FlowService(server).search(query), None
-
-        except NoLogsFound as e:
-            days = ", ".join(day.strftime("%d/%m/%Y") for day in e.days)
-            return None, {
-                "level": "info",
-                "title": "Sem logs para o período",
-                "text": f"O servidor não possui registros para {days}.",
-            }
-
-        except HostKeyMismatch:
-            error_id = uuid.uuid4().hex[:8]
-            logger.error("[Erro %s] Chave do host mudou: %s", error_id, server)
-            return None, {
-                "level": "danger",
-                "title": "Identidade do servidor alterada",
-                "text": "A chave SSH do servidor mudou desde o cadastro e a conexão foi recusada "
-                        "por segurança. Contate o administrador.",
-                "id": error_id,
-            }
-
-        except ServerConnectionError:
-            error_id = uuid.uuid4().hex[:8]
-            logger.exception("[Erro %s] Conexão com %s", error_id, server)
-            return None, {
-                "level": "danger",
-                "title": "Servidor indisponível",
-                "text": "Não foi possível conectar ao servidor de logs. "
-                        "Tente novamente em instantes.",
-                "id": error_id,
-            }
-
-        except Exception:
-            error_id = uuid.uuid4().hex[:8]
-            logger.exception("[Erro %s] Busca em %s: %s", error_id, server, query)
-            return None, {
-                "level": "danger",
-                "title": "Erro inesperado",
-                "text": "A consulta não pôde ser concluída. "
-                        "Informe o código ao suporte.",
-                "id": error_id,
-            }
-
-    @staticmethod
-    def export_csv(result):
-        query = result.query
+    @classmethod
+    def export_csv(cls, outcome):
+        query = outcome.result.query
         filename = f"flowtrace_{query.ip}_{query.target:%Y%m%d_%H%M%S}.csv"
 
         response = HttpResponse(content_type="text/csv; charset=utf-8")
@@ -135,22 +85,35 @@ class FlowSearchView(OrganizationMemberMixin, View):
 
         writer = csv.writer(response, delimiter=";")
         writer.writerow([
-            "ip_publico", "porta_consultada", "horario_consultado",
+            "ip_publico", "porta_consultada", "horario_informado", "fuso_informado",
+            "horario_consultado", "fuso_logs",
             "correspondencia", "data_hora", "diferenca_segundos",
             "ip_origem", "bloco_inicio", "bloco_fim",
+            "assinante_login", "assinante_mac", "sessao_inicio", "sessao_fim", "cadastro",
         ])
-        for r in result.records:
-            writer.writerow([
+        for r, sessions in cls.rows(outcome):
+            base = [
                 query.ip,
                 query.port or "",
+                query.informed.strftime("%d/%m/%Y %H:%M:%S"),
+                query.input_tz,
                 query.target.strftime("%d/%m/%Y %H:%M:%S"),
+                query.log_tz,
                 "exato" if r.is_exact else "proximo",
                 r.flow_time.strftime("%d/%m/%Y %H:%M:%S"),
                 r.delta_seconds,
                 r.source_ip,
                 r.port_block_start if r.port_block_start is not None else "",
                 r.port_block_end if r.port_block_end is not None else "",
-            ])
+            ]
+            for s in sessions or [None]:
+                writer.writerow(base + ([
+                    s.login,
+                    s.mac,
+                    s.started_at.strftime("%d/%m/%Y %H:%M:%S") if s.started_at else "",
+                    s.stopped_at.strftime("%d/%m/%Y %H:%M:%S") if s.stopped_at else "em aberto",
+                    " | ".join(f"{k}: {v}" for k, v in s.customer.items()),
+                ] if s else ["", "", "", "", ""]))
 
         return response
 

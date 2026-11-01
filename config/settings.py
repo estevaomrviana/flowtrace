@@ -21,6 +21,9 @@ ENCRYPTION_KEYS = config(
 SSH_CONNECT_TIMEOUT = config("SSH_CONNECT_TIMEOUT", default=10, cast=int)
 SSH_COMMAND_TIMEOUT = config("SSH_COMMAND_TIMEOUT", default=120, cast=int)
 
+# Timeout (segundos) de conexão e de consulta aos bancos do RADIUS
+SUBSCRIBER_DB_TIMEOUT = config("SUBSCRIBER_DB_TIMEOUT", default=15, cast=int)
+
 LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'servers:list'
 LOGOUT_REDIRECT_URL = 'login'
@@ -31,6 +34,8 @@ INSTALLED_APPS = [
     'apps.organizations.apps.OrganizationsConfig',
     'apps.servers.apps.ServersConfig',
     'apps.audit.apps.AuditConfig',
+    'apps.subscribers.apps.SubscribersConfig',
+    'apps.cases.apps.CasesConfig',
     # django apps
     'django.contrib.admin',
     'django.contrib.auth',

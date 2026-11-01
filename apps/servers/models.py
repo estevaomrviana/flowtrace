@@ -4,6 +4,7 @@ from django.utils import timezone
 
 from apps.core.fields import EncryptedTextField
 from apps.core.models import TimeStampedModel
+from apps.core.timezones import TIMEZONE_CHOICES
 
 
 class ServerQuerySet(models.QuerySet):
@@ -26,6 +27,10 @@ class Server(TimeStampedModel):
     log_path = models.CharField(
         'pasta dos logs', max_length=255,
         help_text='Pasta que contém as subpastas AAAA/MM/DD do nfcapd.',
+    )
+    timezone = models.CharField(
+        'fuso dos logs', max_length=40, choices=TIMEZONE_CHOICES, default=settings.TIME_ZONE,
+        help_text='Fuso horário do servidor que grava os logs (o nfdump exibe os horários nele).',
     )
     is_active = models.BooleanField('ativo', default=True)
     managed_by_platform = models.BooleanField(

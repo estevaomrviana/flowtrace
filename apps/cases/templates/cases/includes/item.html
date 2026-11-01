@@ -1,0 +1,83 @@
+{% load flowtrace %}<article class="ft-card ft-item ft-item--{{ item.status }}" id="item-{{ item.pk }}" data-item data-status="{{ item.status }}" data-run-url="{% url 'cases:item_run' case.pk item.pk %}">
+    <header class="ft-item__head">
+        <span class="ft-item__pos">{{ item.position }}</span>
+        <div class="ft-item__query">
+            <div class="mono ft-ip">{{ item.ip }}{% if item.port %}:{{ item.port }}{% endif %}</div>
+            <div class="ft-cell-sub">
+                <span class="mono">{{ item.informed|date:"d/m/Y H:i:s" }}</span> · {{ item.input_timezone|tz_label }}
+                {% if result and result.target != item.informed %}<span title="Horário no fuso dos logs ({{ result.log_tz|tz_label }})">→ <span class="mono">{{ result.target|date:"d/m H:i:s" }}</span> nos logs</span>{% endif %}
+                · {{ item.server_name }} · ± {{ item.minute_margin }} min{% if not item.port %} · <span class="ft-text-warning" title="Sem a porta, todos os assinantes atrás do mesmo IP público na janela aparecem">sem porta</span>{% endif %}
+            </div>
+        </div>
+        <div class="ft-item__status">
+            {% if item.status == "pending" %}<span class="ft-badge ft-badge--neutral">Pendente</span>
+            {% elif item.status == "no_logs" %}<span class="ft-badge ft-badge--neutral"><i class="lni lni-calendar"></i> Sem logs</span>
+            {% elif item.status == "error" %}<span class="ft-badge ft-badge--danger"><i class="lni lni-warning"></i> Erro</span>
+            {% elif result %}{% with c=result.conclusion %}<span class="ft-badge ft-badge--{{ c.css }}">{% if c.kind == "identified" %}<i class="lni lni-checkmark-circle"></i> {% endif %}{{ c.label }}</span>{% endwith %}{% endif %}
+        </div>
+        {% if case.is_editable %}
+        <div class="ft-item__actions">
+            <form method="post" action="{% url 'cases:item_run' case.pk item.pk %}" data-loading class="d-inline">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-outline-secondary btn-sm" data-loading-text="Consultando…">
+                    {% if item.is_pending %}<i class="lni lni-play"></i> Executar{% else %}<i class="lni lni-reload"></i> Repetir{% endif %}
+                </button>
+            </form>
+            <form method="post" action="{% url 'cases:item_delete' case.pk item.pk %}" class="d-inline">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-outline-secondary btn-sm" title="Remover consulta" aria-label="Remover consulta"><i class="lni lni-trash-can"></i></button>
+            </form>
+        </div>
+        {% endif %}
+    </header>
+
+    {% if item.error_message %}
+    <div class="ft-item__body">
+        <div class="ft-alert ft-alert--{% if item.status == 'no_logs' %}info{% else %}danger{% endif %}"><i class="lni lni-warning"></i><div>{{ item.error_message }}</div></div>
+    </div>
+    {% endif %}
+
+    {% if result %}{% with c=result.conclusion %}
+    <div class="ft-item__body">
+        {% for message in result.subscriber_errors %}
+        <div class="ft-alert ft-alert--warning"><i class="lni lni-warning"></i><div><strong>Fonte de assinantes indisponível</strong>{{ message }}</div></div>
+        {% endfor %}
+        {% if result.days_missing %}
+        <div class="ft-alert ft-alert--warning"><i class="lni lni-warning"></i><div>Sem logs para {% for day in result.days_missing %}{{ day|date:"d/m/Y" }}{% if not forloop.last %}, {% endif %}{% endfor %}. A janela foi consultada apenas parcialmente.</div></div>
+        {% endif %}
+
+        {% if c.sessions %}
+        <div class="ft-item__subscribers">
+            {% for s in c.sessions %}{% include "servers/includes/subscriber.html" with session=s %}{% endfor %}
+        </div>
+        {% elif c.private_ips %}
+        <p class="mb-0">IP privado no horário: {% for ip in c.private_ips %}<span class="mono ft-ip">{{ ip }}</span>{% if not forloop.last %}, {% endif %}{% endfor %}
+            {% if not result.has_sources %}<span class="ft-cell-sub">· cadastre uma <a href="{% url 'subscribers:list' %}">fonte de assinantes</a> para identificar o cliente.</span>{% endif %}
+        </p>
+        {% endif %}
+
+        {% if result.records %}
+        <details class="ft-item__details">
+            <summary>{{ result.records|length }} registro{{ result.records|length|pluralize }} na janela</summary>
+            <table class="ft-table">
+                <thead><tr><th>Correspondência</th><th>Data e hora</th><th>Diferença</th><th>IP de origem</th><th>Bloco de portas</th>{% if result.has_sources %}<th>Login</th>{% endif %}</tr></thead>
+                <tbody>
+                    {% for r, sessions in result.rows %}
+                    <tr>
+                        <td data-label="Correspondência">{% if r.is_exact %}<span class="ft-badge ft-badge--exact">Exato</span>{% else %}<span class="ft-badge ft-badge--near">Próximo</span>{% endif %}</td>
+                        <td data-label="Data e hora" class="mono">{{ r.flow_time|date:"d/m/Y H:i:s" }}</td>
+                        <td data-label="Diferença" class="mono text-body-secondary">{{ r.delta_seconds|signed_delta }}</td>
+                        <td data-label="IP de origem" class="mono">{{ r.source_ip }}</td>
+                        <td data-label="Bloco de portas" class="mono">{% if r.has_port_block %}{{ r.port_block_start }}–{{ r.port_block_end }}{% elif r.translated_port %}{{ r.translated_port }}{% else %}—{% endif %}</td>
+                        {% if result.has_sources %}<td data-label="Login" class="mono">{% for s in sessions %}{{ s.login }}{% if not forloop.last %}, {% endif %}{% empty %}—{% endfor %}</td>{% endif %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </details>
+        {% endif %}
+    </div>
+    {% endwith %}{% endif %}
+
+    {% if item.executed_at %}<footer class="ft-item__foot">Executada em {{ item.executed_at|date:"d/m/Y H:i" }}{% if item.executed_by %} por {{ item.executed_by.get_username }}{% endif %}</footer>{% endif %}
+</article>

@@ -1,0 +1,6 @@
+{% if not case.deadline %}<span class="text-body-secondary">—</span>{% else %}<span class="mono">{{ case.deadline|date:"d/m/Y" }}</span>
+{% if case.status == "open" %}{% with left=case.days_left %}
+{% if left < 0 %}<span class="ft-badge ft-badge--danger"><i class="lni lni-alarm-clock"></i> Vencido</span>
+{% elif left == 0 %}<span class="ft-badge ft-badge--danger"><i class="lni lni-alarm-clock"></i> Vence hoje</span>
+{% elif left <= 3 %}<span class="ft-badge ft-badge--near">{{ left }} dia{{ left|pluralize }}</span>
+{% endif %}{% endwith %}{% endif %}{% endif %}

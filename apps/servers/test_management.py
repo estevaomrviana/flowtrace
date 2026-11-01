@@ -20,7 +20,7 @@ def openssh_key():
 
 def server_data(**overrides):
     data = {
-        'name': 'CGNAT Norte', 'host': '10.0.0.5', 'port': 22, 'log_path': '/var/cache/nfdump',
+        'name': 'CGNAT Norte', 'host': '10.0.0.5', 'port': 22, 'log_path': '/var/cache/nfdump', 'timezone': 'America/Fortaleza',
         'is_active': 'on', 'username': 'nf', 'auth_method': 'password', 'password': 'abc123',
     }
     data.update(overrides)

@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+
+{% block title %}{% if object %}Editar {{ object }}{% else %}Nova fonte{% endif %} · FlowTrace{% endblock %}
+
+{% block breadcrumb %}
+<a href="{% url 'subscribers:list' %}">Assinantes</a>
+<i class="lni lni-chevron-right"></i>
+<span class="ft-crumbs__current">{% if object %}{{ object }}{% else %}Nova{% endif %}</span>
+{% endblock %}
+
+{% block content %}
+<div class="container ft-narrow">
+
+    <div class="ft-page-head">
+        <div>
+            <h1>{% if object %}Editar fonte{% else %}Nova fonte de assinantes{% endif %}</h1>
+            <p>A conexão é somente leitura e a senha é criptografada. Recomendamos um usuário do banco com SELECT apenas nas tabelas necessárias.</p>
+        </div>
+    </div>
+
+    <form method="post" class="ft-form" novalidate>
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+        <div class="ft-alert ft-alert--danger"><i class="lni lni-warning"></i><div>{{ form.non_field_errors|join:" " }}</div></div>
+        {% endif %}
+
+        <section class="ft-card ft-form__section">
+            <header class="ft-form__head">
+                <h2>Fonte</h2>
+                <p>FreeRADIUS, MK-Auth e outros sistemas que gravam o accounting na tabela radacct.</p>
+            </header>
+            <div class="ft-form__grid">
+                <div class="ft-span-2">{% include "includes/field.html" with field=form.name %}</div>
+                {% include "includes/field.html" with field=form.engine %}
+                {% include "includes/field.html" with field=form.timezone %}
+                <div class="ft-span-2">{% include "includes/field.html" with field=form.is_active %}</div>
+            </div>
+        </section>
+
+        <section class="ft-card ft-form__section">
+            <header class="ft-form__head">
+                <h2><i class="lni lni-lock-alt"></i> Acesso ao banco</h2>
+                <p>Com o túnel SSH, o banco não precisa ficar exposto: a conexão parte de um servidor já cadastrado.</p>
+            </header>
+            <div class="ft-form__grid" data-connection-switch>
+                {% include "includes/field.html" with field=form.connection %}
+                <div data-connection="ssh">{% include "includes/field.html" with field=form.ssh_server %}</div>
+                {% include "includes/field.html" with field=form.db_host %}
+                {% include "includes/field.html" with field=form.db_port %}
+                {% include "includes/field.html" with field=form.db_name %}
+                {% include "includes/field.html" with field=form.db_user %}
+                <div class="ft-span-2">{% include "includes/field.html" with field=form.db_password %}</div>
+            </div>
+        </section>
+
+        <section class="ft-card ft-form__section">
+            <header class="ft-form__head">
+                <h2>Consulta</h2>
+                <p>Do radacct vêm login, MAC, NAS e início/fim da sessão. A consulta de cadastro completa com os dados do cliente.</p>
+            </header>
+            <div class="ft-form__grid">
+                <div class="ft-span-2">{% include "includes/field.html" with field=form.table %}</div>
+                <div class="ft-span-2">{% include "includes/field.html" with field=form.customer_query %}</div>
+            </div>
+        </section>
+
+        <div class="ft-form__actions">
+            <a href="{% url 'subscribers:list' %}" class="btn btn-outline-secondary">Cancelar</a>
+            <button type="submit" class="btn btn-primary">{% if object %}Salvar alterações{% else %}Cadastrar fonte{% endif %}</button>
+        </div>
+    </form>
+
+</div>
+{% endblock %}
