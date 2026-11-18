@@ -31,7 +31,10 @@
             <span class="ft-server__icon"><i class="lni lni-database"></i></span>
             <span class="ft-server__body">
                 <span class="ft-server__name">{{ server.name|default:"Sem nome" }}</span>
-                <span class="ft-server__host mono">{{ server.host }}</span>
+                <span class="ft-server__host mono">{% if server.is_local %}{{ server.log_path }}{% else %}{{ server.host }}{% endif %}</span>
+                {% if server.monitor_collection and server.collection.is_problem %}
+                <span class="ft-server__host">{% include "servers/includes/collection.html" %}</span>
+                {% endif %}
             </span>
             <i class="lni lni-arrow-right ft-server__go"></i>
         </a>

@@ -136,6 +136,9 @@ def build_report(case, items, report, content_sha256, user):
         'O assinante foi identificado pela sessão de autenticação (RADIUS) que detinha o endereço IP privado no '
         'horário consultado. Horários informados em outro fuso foram convertidos para o fuso dos registros, '
         'como indicado em cada item.'
+        + (' Cada arquivo de registro tem o resumo criptográfico (SHA-256) calculado quando foi recebido; '
+           'os resumos dos arquivos consultados constam em cada item e permitem verificar que não foram alterados.'
+           if any(item.status == item.Status.SUCCESS and (item.data or {}).get('files') for item in items) else '')
     ))
 
     # Integridade e assinatura
@@ -199,6 +202,12 @@ def _item_block(item, styles, width, p):
     elif conclusion.private_ips:
         block.append(Spacer(1, 2 * mm))
         block.append(p(_t('Endereço(s) IP privado(s) no horário: ' + ', '.join(conclusion.private_ips)), 'cell'))
+
+    if result.files:
+        block.append(Spacer(1, 2 * mm))
+        block.append(p('Arquivos de registro consultados e seu resumo SHA-256, calculado no recebimento:', 'small'))
+        for f in result.files:
+            block.append(p(_t(f"{f['path']}  {f['sha256']}"), 'mono'))
 
     return block
 

@@ -2,7 +2,7 @@ from dataclasses import dataclass
 
 from .exceptions import FlowSearchError, HostKeyMismatch
 from .nfdump_builder import quote_path
-from .ssh_client import SSHClient
+from .runner import runner_for
 
 NFDUMP_MISSING_EXIT = 10
 LOG_PATH_MISSING_EXIT = 11
@@ -16,7 +16,7 @@ class HealthReport:
 
 def check_server(server, ssh_factory=None):
     """Conecta, confirma o nfdump instalado e a pasta de logs existente."""
-    ssh_factory = ssh_factory or SSHClient
+    ssh_factory = ssh_factory or runner_for
     command = (
         f"command -v nfdump >/dev/null 2>&1 || exit {NFDUMP_MISSING_EXIT}; "
         f"test -d {quote_path(server.log_path)} || exit {LOG_PATH_MISSING_EXIT}"
@@ -37,4 +37,5 @@ def check_server(server, ssh_factory=None):
     if result.exit_status != 0:
         return HealthReport(False, f"Comando de verificação falhou (código {result.exit_status}).")
 
-    return HealthReport(True, "Conexão OK: nfdump encontrado e pasta de logs acessível.")
+    prefix = "Execução local OK" if server.is_local else "Conexão OK"
+    return HealthReport(True, f"{prefix}: nfdump encontrado e pasta de logs acessível.")

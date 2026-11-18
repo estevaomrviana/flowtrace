@@ -42,7 +42,8 @@ class SubscriberSourceForm(StyledFormMixin, forms.ModelForm):
     def __init__(self, *args, organization=None, **kwargs):
         super().__init__(*args, **kwargs)
         organization = organization or getattr(self.instance, "organization", None)
-        servers = Server.objects.all()
+        # O túnel precisa de SSH; servidores em execução local não servem.
+        servers = Server.objects.filter(access=Server.Access.SSH)
         if organization is not None:
             servers = servers.for_organization(organization)
         self.fields["ssh_server"].queryset = servers

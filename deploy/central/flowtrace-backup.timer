@@ -1,0 +1,11 @@
+# /etc/systemd/system/flowtrace-backup.timer
+[Unit]
+Description=FlowTrace - backup diário às 03:00
+
+[Timer]
+OnCalendar=*-*-* 03:00
+RandomizedDelaySec=15min
+Persistent=true
+
+[Install]
+WantedBy=timers.target

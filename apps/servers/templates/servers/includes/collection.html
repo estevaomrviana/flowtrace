@@ -1,0 +1,14 @@
+{# Situação da coleta do servidor (manage.py check_collection). Uso: include com server=... #}
+{% with c=server.collection %}
+{% if not server.monitor_collection %}
+<span class="ft-badge ft-badge--neutral" title="Monitoramento desligado para este servidor">Sem monitoramento</span>
+{% elif not c %}
+<span class="ft-badge ft-badge--neutral" title="A verificação automática ainda não rodou para este servidor">Coleta não verificada</span>
+{% else %}
+<span class="ft-badge {% if c.state == 'ok' %}ft-badge--exact{% elif c.state == 'error' %}ft-badge--danger{% else %}ft-badge--near{% endif %}"
+      title="{{ c.message }} · verificada em {{ c.checked_at|date:'d/m/Y H:i' }}">
+    <i class="lni {% if c.state == 'ok' %}lni-checkmark-circle{% else %}lni-warning{% endif %}"></i>
+    {% if c.last_file_at %}Último registro há {{ c.last_file_at|timesince }}{% else %}{{ c.get_state_display }}{% endif %}
+</span>
+{% endif %}
+{% endwith %}

@@ -36,6 +36,7 @@
                     <th>Servidor</th>
                     <th>Acesso</th>
                     <th>Chave do host</th>
+                    <th>Coleta</th>
                     <th>Situação</th>
                     <th class="ft-table__actions"><span class="visually-hidden">Ações</span></th>
                 </tr>
@@ -46,21 +47,26 @@
                 <tr>
                     <td data-label="Servidor">
                         <div class="ft-cell-title">{{ server.name }}</div>
-                        <div class="ft-cell-sub mono">{{ server.host }}:{{ server.port }}</div>
+                        <div class="ft-cell-sub mono">{% if server.is_local %}{{ server.log_path }}{% else %}{{ server.host }}:{{ server.port }}{% endif %}</div>
                     </td>
                     <td data-label="Acesso">
-                        {% if cred %}
+                        {% if server.is_local %}
+                        <span class="ft-badge ft-badge--info"><i class="lni lni-database"></i> Execução local</span>
+                        {% elif cred %}
                         <span class="mono">{{ cred.username }}</span>
                         <span class="ft-cell-sub">· {{ cred.get_auth_method_display|lower }}</span>
                         {% else %}<span class="text-body-secondary">Não configurado</span>{% endif %}
                     </td>
                     <td data-label="Chave do host">
-                        {% if cred.host_key %}
+                        {% if server.is_local %}
+                        <span class="text-body-secondary">Não se aplica</span>
+                        {% elif cred.host_key %}
                         <span class="ft-badge ft-badge--exact" title="Verificada em {{ cred.host_key_verified_at|date:'d/m/Y H:i' }}"><i class="lni lni-shield"></i> Fixada</span>
                         {% else %}
                         <span class="ft-badge ft-badge--neutral">Aguardando 1ª conexão</span>
                         {% endif %}
                     </td>
+                    <td data-label="Coleta">{% include "servers/includes/collection.html" %}</td>
                     <td data-label="Situação">
                         {% if server.managed_by_platform %}<span class="ft-badge ft-badge--info">Gerenciado pela plataforma</span>{% endif %}
                         {% if not server.is_active %}<span class="ft-badge ft-badge--neutral">Inativo</span>{% elif not server.managed_by_platform %}<span class="ft-badge ft-badge--exact">Ativo</span>{% endif %}
@@ -68,7 +74,7 @@
                     <td class="ft-table__actions">
                         <form method="post" action="{% url 'servers:test' server.pk %}" data-loading class="d-inline">
                             {% csrf_token %}
-                            <button type="submit" class="btn btn-outline-secondary btn-sm" data-loading-text="Testando…"><i class="lni lni-pulse"></i> Testar</button>
+                            <button type="submit" class="btn btn-outline-secondary btn-sm" data-loading-text="Testando…" title="Testa o acesso e verifica a chegada de arquivos"><i class="lni lni-pulse"></i> Testar</button>
                         </form>
                         {% if not server.managed_by_platform and membership.can_manage_servers %}
                         <div class="dropdown d-inline">

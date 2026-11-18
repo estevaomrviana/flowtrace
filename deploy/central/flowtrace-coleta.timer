@@ -1,0 +1,10 @@
+# /etc/systemd/system/flowtrace-coleta.timer
+[Unit]
+Description=FlowTrace - verificação da coleta a cada 5 minutos
+
+[Timer]
+OnBootSec=3min
+OnUnitActiveSec=5min
+
+[Install]
+WantedBy=timers.target

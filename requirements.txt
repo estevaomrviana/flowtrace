@@ -4,6 +4,7 @@ cffi==2.0.0
 charset-normalizer==3.5.2
 cryptography==46.0.5
 Django==6.0.3
+gunicorn==23.0.0
 invoke==3.0.3
 paramiko==5.1.0
 pillow==13.0.0

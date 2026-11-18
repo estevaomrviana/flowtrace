@@ -7,10 +7,17 @@ from .models import Server
 
 class ServerAdminForm(ServerForm):
     class Meta(ServerForm.Meta):
-        fields = ('organization', 'managed_by_platform', *ServerForm.Meta.fields)
+        fields = ('organization', 'managed_by_platform', 'access', *ServerForm.Meta.fields)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        # Em execução local não há acesso SSH; a exigência é feita em clean().
+        self.fields['username'].required = False
+        self.fields['auth_method'].required = False
+        self.fields['access'].required = False
+
+    def clean_access(self):
+        return self.cleaned_data.get('access') or Server.Access.SSH
         if not self.instance.pk:
             # Cadastrado pela plataforma: por padrão a organização só usa.
             self.fields['managed_by_platform'].initial = True
@@ -19,19 +26,28 @@ class ServerAdminForm(ServerForm):
 @admin.register(Server)
 class ServerAdmin(admin.ModelAdmin):
     form = ServerAdminForm
-    list_display = ('name', 'organization', 'host', 'port', 'is_active', 'managed_by_platform', 'host_key_status')
-    list_filter = ('organization', 'is_active', 'managed_by_platform')
+    list_display = ('name', 'organization', 'access', 'host', 'port', 'is_active', 'managed_by_platform', 'host_key_status', 'collection_state')
+    list_filter = ('organization', 'access', 'is_active', 'managed_by_platform')
     search_fields = ('name', 'host', 'organization__name')
-    list_select_related = ('organization', 'credential')
+    list_select_related = ('organization', 'credential', 'collection')
     readonly_fields = ('host_key_status', 'created_by', 'created_at', 'updated_at')
     fieldsets = (
-        (None, {'fields': ('organization', 'name', 'host', 'port', 'log_path', 'timezone', 'is_active', 'managed_by_platform')}),
+        (None, {'fields': (
+            'organization', 'name', 'access', 'host', 'port', 'log_path', 'timezone',
+            'is_active', 'monitor_collection', 'managed_by_platform',
+        )}),
         ('Acesso SSH', {
             'fields': ('username', 'auth_method', 'password', 'private_key', 'key_passphrase', 'host_key_status'),
-            'description': 'Os segredos são criptografados e nunca exibidos. Deixe em branco para manter os valores salvos.',
+            'description': 'Os segredos são criptografados e nunca exibidos. Deixe em branco para manter os valores salvos. '
+                           'Não se aplica a servidores em execução local.',
         }),
         ('Registro', {'fields': ('created_by', 'created_at', 'updated_at'), 'classes': ('collapse',)}),
     )
+
+    @admin.display(description='coleta')
+    def collection_state(self, obj):
+        status = getattr(obj, 'collection', None)
+        return status.get_state_display() if status else '—'
 
     @admin.display(description='chave do host')
     def host_key_status(self, obj):

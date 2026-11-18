@@ -1,0 +1,11 @@
+# /etc/systemd/system/flowtrace-integridade.service
+# Teste mensal: recalcula o SHA-256 de um dia sorteado de cada servidor e compara com o manifesto.
+[Unit]
+Description=FlowTrace - conferência mensal de integridade
+
+[Service]
+Type=oneshot
+User=flowtrace
+Group=flowtrace
+WorkingDirectory=/srv/flowtrace/app
+ExecStart=/srv/flowtrace/venv/bin/python manage.py verify_log_files --alert

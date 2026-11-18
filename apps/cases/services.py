@@ -9,6 +9,7 @@ from django.utils import timezone
 
 from apps.audit.services import record_search
 from apps.servers.models import Server
+from apps.servers.services.collection import files_for_window
 from apps.servers.services.flow_service import FlowQuery
 from apps.servers.services.nfdump_parser import FlowRecord
 from apps.servers.services.search import run_search
@@ -117,6 +118,11 @@ def serialize(query, outcome, server):
             for ip, sessions in (lookup.sessions.items() if lookup else [])
         },
         'subscriber_errors': list(lookup.errors) if lookup else [],
+        # Manifesto de integridade: arquivos que cobrem a janela, com o hash registrado ao chegar.
+        'files': [
+            {'path': f.path, 'sha256': f.sha256, 'registered_at': _iso(f.registered_at)}
+            for f in files_for_window(server, result.window.start, result.window.end, query.log_tz)
+        ],
     }
 
 
@@ -142,6 +148,7 @@ class ItemResult:
     sessions: dict
     has_sources: bool
     subscriber_errors: list
+    files: list = field(default_factory=list)
 
     @classmethod
     def from_data(cls, data):
@@ -161,6 +168,7 @@ class ItemResult:
             },
             has_sources=data['has_sources'],
             subscriber_errors=data['subscriber_errors'],
+            files=data.get('files', []),  # snapshots anteriores ao manifesto não têm
         )
 
     @property

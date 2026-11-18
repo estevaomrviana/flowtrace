@@ -113,7 +113,7 @@ class ServerForm(StyledFormMixin, forms.ModelForm):
 
     class Meta:
         model = Server
-        fields = ("name", "host", "port", "log_path", "timezone", "is_active")
+        fields = ("name", "host", "port", "log_path", "timezone", "is_active", "monitor_collection")
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -149,10 +149,24 @@ class ServerForm(StyledFormMixin, forms.ModelForm):
             raise ValidationError("Use um caminho absoluto (ex.: /var/cache/nfdump).")
         return path.rstrip("/") or "/"
 
+    @property
+    def is_local(self):
+        """Servidor em execução local (só no admin da plataforma): não usa credencial SSH."""
+        access = self.cleaned_data.get("access", self.instance.access) if hasattr(self, "cleaned_data") else self.instance.access
+        return access == Server.Access.LOCAL
+
     def clean(self):
         cleaned = super().clean()
         method = cleaned.get("auth_method")
         cred = self.credential
+
+        if self.is_local:
+            return cleaned
+
+        if not cleaned.get("username") and "username" not in self.errors:
+            self.add_error("username", "Informe o usuário SSH.")
+        if not method and "auth_method" not in self.errors:
+            self.add_error("auth_method", "Escolha a forma de autenticação.")
 
         if method == ServerCredential.AuthMethod.PASSWORD:
             if not cleaned.get("password") and not (cred and cred.password):
@@ -183,6 +197,9 @@ class ServerForm(StyledFormMixin, forms.ModelForm):
         return server
 
     def save_credential(self):
+        if self.is_local:
+            return None
+
         data = self.cleaned_data
         cred = self.credential or ServerCredential(server=self.instance)
 

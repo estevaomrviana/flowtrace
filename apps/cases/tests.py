@@ -196,6 +196,39 @@ class CaseFlowTests(TestCase):
         self.assertContains(detail, report.content_sha256)
         self.assertContains(detail, 'Assinante identificado')
 
+    def test_manifest_files_go_into_snapshot_and_pdf(self):
+        from apps.servers.models import LogFile
+
+        for stamp, digest in (('202603171635', 'a' * 64), ('202603171640', 'b' * 64), ('202603171700', 'c' * 64)):
+            LogFile.objects.create(
+                server=self.server, path=f'2026/03/17/nfcapd.{stamp}', size=10, sha256=digest,
+                modified_at=datetime(2026, 3, 17, 20, tzinfo=dt_timezone.utc),
+                interval_start=datetime.strptime(stamp, '%Y%m%d%H%M').replace(tzinfo=FORTALEZA),
+            )
+        case = self.open_case()
+        self.add(case, '203.0.113.1;2026-03-17 19:40:00')
+        item = case.items.get()
+
+        ssh_patch, lookup_patch, _ = self.fakes([flow('2026-03-17T16:40:05')], [session_row()])
+        with ssh_patch, lookup_patch:
+            self.client.post(reverse('cases:item_run', args=[case.pk, item.pk]), HTTP_ACCEPT='application/json')
+
+        item.refresh_from_db()
+        # Janela 16:35-16:45 em Fortaleza: arquivos das 16:35 e 16:40, não o das 17:00.
+        self.assertEqual([f['sha256'][0] for f in item.data['files']], ['a', 'b'])
+        self.assertEqual(ItemResult.from_data(item.data).files[0]['path'], '2026/03/17/nfcapd.202603171635')
+
+        response = self.client.post(reverse('cases:report', args=[case.pk]))
+        self.assertTrue(response.content.startswith(b'%PDF'))
+
+    def test_old_snapshots_without_files_still_load(self):
+        data = {
+            'server': 'x', 'log_tz': 'UTC', 'target': '2026-03-17T16:40:00',
+            'window': ['2026-03-17T16:35:00', '2026-03-17T16:45:00'], 'days_missing': [], 'records': [],
+            'sessions': {}, 'has_sources': False, 'subscriber_errors': [],
+        }
+        self.assertEqual(ItemResult.from_data(data).files, [])
+
     def test_invalid_lines_are_reported_and_nothing_is_added(self):
         case = self.open_case()
         response = self.add(case, '203.0.113.1;17/03/2026 16:40:00\nlixo 1;2')

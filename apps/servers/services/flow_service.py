@@ -9,6 +9,7 @@ from apps.core import timezones
 from .exceptions import NoLogsFound, RemoteCommandError
 from .nfdump_builder import MISSING_DIR_EXIT_CODE, NFDumpCommandBuilder, TimeWindow
 from .nfdump_parser import FlowRecord, NFDumpParser
+from .runner import runner_for
 from .ssh_client import SSHClient
 
 logger = logging.getLogger(__name__)
@@ -70,7 +71,8 @@ class FlowService:
 
     def __init__(self, server, ssh_factory=None):
         self.server = server
-        self.ssh_factory = ssh_factory or SSHClient
+        # SSHClient é lido na hora da chamada (os testes o substituem neste módulo).
+        self.ssh_factory = ssh_factory or (lambda s: runner_for(s, SSHClient))
 
     def search(self, query):
         result = FlowSearchResult(query=query, window=query.window)

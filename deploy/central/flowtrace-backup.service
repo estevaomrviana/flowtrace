@@ -1,0 +1,10 @@
+# /etc/systemd/system/flowtrace-backup.service
+[Unit]
+Description=FlowTrace - backup diário (banco + logs) e retenção
+
+[Service]
+Type=oneshot
+User=flowtrace
+Group=flowtrace
+EnvironmentFile=/srv/flowtrace/backup.env
+ExecStart=/srv/flowtrace/app/deploy/central/backup.sh

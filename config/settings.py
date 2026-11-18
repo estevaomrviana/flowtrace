@@ -24,6 +24,24 @@ SSH_COMMAND_TIMEOUT = config("SSH_COMMAND_TIMEOUT", default=120, cast=int)
 # Timeout (segundos) de conexão e de consulta aos bancos do RADIUS
 SUBSCRIBER_DB_TIMEOUT = config("SUBSCRIBER_DB_TIMEOUT", default=15, cast=int)
 
+# Pasta onde ficam os logs recebidos no próprio servidor do flowtrace
+# (/dados/<organização>/<equipamento>/AAAA/MM/DD). Servidores em modo
+# "execução local" só podem apontar para dentro dela. Vazio = modo local desligado.
+FLOWTRACE_DATA_ROOT = config("FLOWTRACE_DATA_ROOT", default="")
+
+# Saúde da coleta (manage.py check_collection, rodado a cada poucos minutos)
+COLLECTION_STALE_MINUTES = config("COLLECTION_STALE_MINUTES", default=15, cast=int)
+COLLECTION_REALERT_HOURS = config("COLLECTION_REALERT_HOURS", default=6, cast=int)
+# Intervalo de rotação do nfcapd (-t); usado para achar os arquivos de uma janela.
+NFCAPD_ROTATION_SECONDS = config("NFCAPD_ROTATION_SECONDS", default=300, cast=int)
+# Máximo de arquivos novos que recebem hash SHA-256 por servidor em cada execução.
+MANIFEST_BATCH_SIZE = config("MANIFEST_BATCH_SIZE", default=600, cast=int)
+
+# Alertas (opcionais): bot do Telegram e ping do Healthchecks a cada execução.
+TELEGRAM_BOT_TOKEN = config("TELEGRAM_BOT_TOKEN", default="")
+TELEGRAM_CHAT_ID = config("TELEGRAM_CHAT_ID", default="")
+HEALTHCHECKS_PING_URL = config("HEALTHCHECKS_PING_URL", default="")
+
 LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'servers:list'
 LOGOUT_REDIRECT_URL = 'login'
@@ -92,12 +110,30 @@ SESSION_COOKIE_AGE = config('SESSION_COOKIE_AGE', default=8 * 60 * 60, cast=int)
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 X_FRAME_OPTIONS = 'DENY'
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+# Banco: PostgreSQL quando DB_NAME estiver definido (produção); sem ele,
+# SQLite local, útil só para desenvolvimento.
+DB_NAME = config('DB_NAME', default='')
+if DB_NAME:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': DB_NAME,
+            'USER': config('DB_USER', default='flowtrace'),
+            'PASSWORD': config('DB_PASSWORD', default=''),
+            'HOST': config('DB_HOST', default='localhost'),
+            'PORT': config('DB_PORT', default='5432'),
+            'CONN_MAX_AGE': config('DB_CONN_MAX_AGE', default=60, cast=int),
+            'CONN_HEALTH_CHECKS': True,
+            'OPTIONS': {'connect_timeout': 10},
+        }
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
 
 AUTH_PASSWORD_VALIDATORS = [

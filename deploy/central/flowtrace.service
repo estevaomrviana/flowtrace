@@ -1,0 +1,22 @@
+# /etc/systemd/system/flowtrace.service
+[Unit]
+Description=FlowTrace (gunicorn)
+After=network-online.target postgresql.service
+Wants=network-online.target
+
+[Service]
+User=flowtrace
+Group=flowtrace
+WorkingDirectory=/srv/flowtrace/app
+ExecStart=/srv/flowtrace/venv/bin/gunicorn config.wsgi:application \
+    --bind 127.0.0.1:8000 --workers 3 --timeout 180 \
+    --access-logfile - --error-logfile -
+Restart=always
+RestartSec=5
+NoNewPrivileges=true
+ProtectSystem=full
+ProtectHome=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

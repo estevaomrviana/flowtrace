@@ -1,0 +1,11 @@
+# /etc/systemd/system/flowtrace-coleta.service
+# Saúde da coleta + manifesto SHA-256 dos arquivos novos.
+[Unit]
+Description=FlowTrace - verificação da coleta e manifesto de integridade
+
+[Service]
+Type=oneshot
+User=flowtrace
+Group=flowtrace
+WorkingDirectory=/srv/flowtrace/app
+ExecStart=/srv/flowtrace/venv/bin/python manage.py check_collection

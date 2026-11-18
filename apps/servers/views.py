@@ -13,7 +13,8 @@ from apps.organizations.mixins import OrganizationMemberMixin, ServerManagerMixi
 from apps.subscribers.services import SubscriberLookup
 
 from .forms import FlowSearchForm, ServerForm
-from .models import Server
+from .models import CollectionStatus, Server
+from .services.collection import sync_server
 from .services.health import check_server
 from .services.registry import register_server
 from .services.search import run_search
@@ -25,7 +26,7 @@ class ServerList(OrganizationMemberMixin, ListView):
     template_name = 'servers/server/list.html'
 
     def get_queryset(self):
-        return Server.objects.for_organization(self.organization).active()
+        return Server.objects.for_organization(self.organization).active().select_related('collection')
 
 
 class FlowSearchView(OrganizationMemberMixin, View):
@@ -130,7 +131,7 @@ class ServerManageList(OrganizationMemberMixin, ListView):
         return self.membership.is_admin
 
     def get_queryset(self):
-        return Server.objects.for_organization(self.organization).select_related('credential')
+        return Server.objects.for_organization(self.organization).select_related('credential', 'collection')
 
 
 class EditableServerMixin(ServerManagerMixin):
@@ -204,6 +205,11 @@ class ServerTestView(ServerActionView):
         report = check_server(server)
         level = messages.SUCCESS if report.ok else messages.ERROR
         messages.add_message(request, level, f'{server}: {report.message}')
+
+        if report.ok:
+            collection = sync_server(server)
+            level = messages.SUCCESS if collection.state == CollectionStatus.State.OK else messages.WARNING
+            messages.add_message(request, level, f'Coleta: {collection.message}')
         return redirect('servers:manage')
 
 
