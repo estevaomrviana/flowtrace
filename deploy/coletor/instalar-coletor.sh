@@ -156,7 +156,7 @@ table inet flowtrace {
   }
 }
 EOF
-grep -q 'nftables.d-flowtrace.conf' /etc/nftables.conf 2>/dev/null || \
+grep -qF '/etc/nftables-flowtrace.conf' /etc/nftables.conf 2>/dev/null || \
   echo 'include "/etc/nftables-flowtrace.conf"' >> /etc/nftables.conf
 systemctl enable --now nftables >/dev/null
 nft -f /etc/nftables.conf
